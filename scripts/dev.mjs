@@ -8,7 +8,7 @@ await server.listen();
 server.printUrls();
 
 const env = { ...process.env, DEV_SERVER_URL: server.resolvedUrls?.local[0] };
-delete env.DEV_SERVER_URL;
+delete env.ELECTRON_RUN_AS_NODE;
 
 const electron = spawn(electronPath, ["."], { stdio: "inherit", env });
 electron.on("exit", () => server.close());

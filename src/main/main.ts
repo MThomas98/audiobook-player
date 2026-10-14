@@ -7,7 +7,7 @@ function createWindow(): void
         width: 600,
         height: 800,
         webPreferences: {
-            preload: join(__dirname, "preload.js"),
+            preload: join(__dirname, "..", "preload", "preload.js"),
         },
     });
 
@@ -18,7 +18,7 @@ function createWindow(): void
     }
     else
     {
-        window.loadFile(join(__dirname, "page", "index.html"));
+        window.loadFile(join(__dirname, "..", "page", "index.html"));
     }
 }
 
