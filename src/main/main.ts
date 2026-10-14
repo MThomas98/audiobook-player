@@ -1,5 +1,9 @@
 import { app, BrowserWindow, dialog, ipcMain } from "electron";
+import { readdir } from "node:fs/promises";
 import { join } from "node:path";
+import { FolderContents } from "../shared/api";
+
+let selectedFolder: FolderContents | null = null;
 
 function createWindow(): void
 {
@@ -24,10 +28,19 @@ function createWindow(): void
 
 app.whenReady().then(() =>
 {
-    ipcMain.handle("select-folder", async () =>
+    ipcMain.handle("select-folder", async (): Promise<null | FolderContents> =>
     {
         const result = await dialog.showOpenDialog({ properties: ["openDirectory"] });
-        return result.canceled ? null : result.filePaths[0];
+        if (result.canceled)
+        {
+            return null;
+        }
+
+        const folderPath = result.filePaths[0];
+        const files = await readdir(folderPath);
+        selectedFolder = { folderPath, files };
+
+        return selectedFolder;
     });
 
     console.log(process.version);

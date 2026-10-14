@@ -1,8 +1,9 @@
 import { useState } from "react";
+import { FolderContents } from "../shared/api";
 
 export function App()
 {
-    const [folder, setFolder] = useState<string | null>(null);
+    const [folder, setFolder] = useState<FolderContents | null>(null);
 
     async function handleChooseFolder()
     {
@@ -17,7 +18,13 @@ export function App()
         <main>
             <h1>Morgiobooks</h1>
             <button onClick={handleChooseFolder}>Choose folder</button>
-            <p>{folder ?? "No folder chosen"}</p>
+            <p>{folder ? folder.folderPath : "No folder chosen"}</p>
+            <ul>
+                {folder?.files.map(file => (
+                    <li key={file}>{file}</li>
+                ))}
+            </ul>
+
         </main>
     );
 }

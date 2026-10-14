@@ -1,4 +1,10 @@
+export interface FolderContents
+{
+    folderPath: string;
+    files: string[];
+}
+
 export interface Api
 {
-    selectFolder(): Promise<string | null>;
+    selectFolder(): Promise<FolderContents | null>;
 }
