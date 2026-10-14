@@ -1,11 +1,17 @@
 import { defineConfig } from "eslint/config";
 import js from "@eslint/js";
-import tselint from "typescript-eslint";
-import prettier from "eslint-config-prettier/flat";
+import tseslint from "typescript-eslint";
+import stylistic from "@stylistic/eslint-plugin";
 
 export default defineConfig(
     { ignores: ["dist/**"] },
     js.configs.recommended,
-    tselint.config.recommended,
-    prettier,
+    tseslint.configs.recommended,
+    stylistic.configs.customize({
+        indent: 4,
+        quotes: "double",
+        semi: true,
+        braceStyle: "allman",
+        jsx: true,
+    }),
 );

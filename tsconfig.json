@@ -10,5 +10,6 @@
         "sourceMap": true,
         "moduleDetection": "auto"
     },
-    "include": ["src"]
+    "include": ["src"],
+    "exclude": ["src/page"]
 }

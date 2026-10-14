@@ -1,7 +1,8 @@
 import { app, BrowserWindow, dialog, ipcMain } from "electron";
 import { join } from "node:path";
 
-function createWindow(): void {
+function createWindow(): void
+{
     const window = new BrowserWindow({
         width: 600,
         height: 800,
@@ -10,11 +11,21 @@ function createWindow(): void {
         },
     });
 
-    window.loadFile(join(__dirname, "..", "index.html"));
+    const devServerUrl = process.env.DEV_SERVER_URL;
+    if (devServerUrl)
+    {
+        window.loadURL(devServerUrl);
+    }
+    else
+    {
+        window.loadFile(join(__dirname, "page", "index.html"));
+    }
 }
 
-app.whenReady().then(() => {
-    ipcMain.handle("select-folder", async () => {
+app.whenReady().then(() =>
+{
+    ipcMain.handle("select-folder", async () =>
+    {
         const result = await dialog.showOpenDialog({ properties: ["openDirectory"] });
         return result.canceled ? null : result.filePaths[0];
     });

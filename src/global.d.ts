@@ -1,6 +1,7 @@
 import type { Api } from "./preload";
 
-declare global {
+declare global
+{
     interface Window {
         api: Api;
     }
