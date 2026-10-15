@@ -8,7 +8,8 @@
         "start": "npm run build && electron .",
         "dev-start": "tsc && node scripts/dev.mjs",
         "lint": "eslint .",
-        "format": "eslint . --fix"
+        "format": "eslint . --fix",
+        "test-media": "node scripts/make-test-media.mjs"
     },
     "keywords": [],
     "author": "",
