@@ -2,7 +2,7 @@
 
 A Windows desktop audiobook player (Electron + React + TypeScript), built as a learning project. It plays local MP4 audiobooks (`.mp4`/`.m4a`/`.m4b`) with chapter metadata. One file = one book. Fully offline.
 
-**Plan and milestone status:** `C:\Users\morga\.claude\plans\i-want-to-create-sharded-rainbow.md`. Read it before starting milestone work, and update it when a milestone finishes or the scope changes.
+**Plan and milestone status:** [docs/plan.md](docs/plan.md). Read it before starting milestone work, and update it when a milestone finishes or the scope changes.
 
 ## How to work with the user
 - The user is learning TypeScript, Electron and the Node toolchain (they're a C++ engineer). **They write the code themselves.** Explain each step and let them do it. Only edit project files when they explicitly ask.

@@ -1,7 +1,7 @@
 import { app, BrowserWindow, dialog, ipcMain } from "electron";
 import { readdir } from "node:fs/promises";
 import { join } from "node:path";
-import { FolderContents } from "../shared/api";
+import type { FolderContents } from "../shared/api";
 
 let selectedFolder: FolderContents | null = null;
 
