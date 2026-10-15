@@ -24,7 +24,7 @@ export function App()
             <ul>
                 {books.length != 0 ? <h2>Books: </h2> : ""}
                 {books.map(book => (
-                    <li key={book.id}>{book.title}</li>
+                    <li key={book.id}>{`${book.title} (${book.author ?? "Unknown Authour"})`}</li>
                 ))}
             </ul>
 

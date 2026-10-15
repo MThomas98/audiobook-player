@@ -1,7 +1,10 @@
 import { app, BrowserWindow, dialog, ipcMain } from "electron";
 import { readdir } from "node:fs/promises";
-import { join } from "node:path";
+import { basename, join } from "node:path";
+import { parseFile } from "music-metadata";
+
 import { expectString, expectProgress } from "./typeCheckers";
+import { findAudiobookFiles } from "./library";
 
 import type { FolderContents, Progress, Book } from "../shared/types";
 import type { Api } from "../shared/api";
@@ -43,15 +46,21 @@ async function handleScanFolder(): Promise<Book[]>
         throw new Error("Cannot scan folder as no folder is selected - call window.api.selectFolder() first.");
     }
 
+    const bookFiles = await findAudiobookFiles(selectedFolder.folderPath);
+
     const books: Book[] = [];
-    for (const file of selectedFolder.files)
+    for (const bookIndex in bookFiles)
     {
+        const filePath = bookFiles[bookIndex];
+        const metadata = await parseFile(filePath, { includeChapters: true });
+
         books.push({
-            id: "",
-            filePath: join(selectedFolder.folderPath, file),
-            title: file,
-            chapters: [],
-            duration: 0,
+            id: bookIndex,
+            filePath: filePath,
+            title: metadata.common.title ?? basename(filePath),
+            chapters: [], // TODO
+            duration: metadata.format.duration ?? 0,
+            author: metadata.common.artist,
         });
     }
 
