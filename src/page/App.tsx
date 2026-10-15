@@ -33,17 +33,8 @@ export function App()
                         <br />
                         Chapters:
                         <ul>
-                            {book.chapters.map((chapter, index) =>
-                            {
-                                if (index < 5)
-                                {
-                                    return <li>{chapter.title}</li>;
-                                }
-                                else if (index == 5)
-                                {
-                                    return <li>...</li>;
-                                }
-                            })}
+                            {book.chapters.slice(0, 5).map((chapter, index) => <li key={index}>{chapter.title}</li>)}
+                            {book.chapters.length > 5 && <li>...</li>}
                         </ul>
                     </li>
                 ))}
