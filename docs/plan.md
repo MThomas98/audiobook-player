@@ -19,7 +19,7 @@ The user is a C++ engineer who knows JavaScript well and is new to TypeScript, E
 | Dev loop | `scripts/dev.mjs` starts Vite's dev server, then Electron with `DEV_SERVER_URL` | Main/preload changes need a manual restart; electron-vite is an option later |
 | Lint + format | ESLint 10 + typescript-eslint + **ESLint Stylistic** (no Prettier) | Allman braces, 4-space indent, double quotes, semicolons, binary operators at the end of the line (`operator-linebreak: after`) |
 | Metadata | `music-metadata` 12.x in main, with `includeChapters: true` | Reads QuickTime chapter tracks and Nero `chpl` lists. **ESM-only package; main is CommonJS**: check `require(esm)` works at the start of milestone 3, otherwise switch main to ESM or bundle |
-| Audio | HTML `<audio>` in the page | Electron plays AAC in MP4; ALAC/AC-3 audio won't play (detect and report) |
+| Audio | HTML `<audio>` in the page | Verified with `canPlayType` in Electron 44: AAC, Opus and FLAC in MP4 play; ALAC, AC-3 and E-AC-3 don't. Main uses an allowlist on `metadata.format.codec` (`"MPEG-4/AAC"`, `"MPEG-1 layer 3"`). music-metadata doesn't name Opus/FLAC-in-MP4, so those are rejected too (rare for audiobooks). Recheck when upgrading Electron |
 | Persistence | JSON file in `app.getPath('userData')` | |
 | Tests | Vitest | |
 | Packaging | electron-builder, Windows installer | |

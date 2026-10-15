@@ -27,13 +27,23 @@ export function App()
                 {library.size > 0 && <h2>Library: </h2>}
                 {[...library].map(([bookId, book]) => (
                     <li key={bookId}>
-                        {`${book.title} (${book.author ?? "Unknown Authour"})`}
+                        <b>{`${book.title} (${book.author ?? "Unknown Authour"})`}</b>
                         <br />
                         {book.coverDataUrl && <img src={book.coverDataUrl} alt="" width={256} />}
                         <br />
                         Chapters:
                         <ul>
-                            {book.chapters.map(chapter => (<li>{chapter.title}</li>))}
+                            {book.chapters.map((chapter, index) =>
+                            {
+                                if (index < 5)
+                                {
+                                    return <li>{chapter.title}</li>;
+                                }
+                                else if (index == 5)
+                                {
+                                    return <li>...</li>;
+                                }
+                            })}
                         </ul>
                     </li>
                 ))}
