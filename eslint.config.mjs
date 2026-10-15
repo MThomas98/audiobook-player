@@ -14,4 +14,9 @@ export default defineConfig(
         braceStyle: "allman",
         jsx: true,
     }),
+    {
+        rules: {
+            "@stylistic/operator-linebreak": ["error", "after"],
+        },
+    },
 );

@@ -24,3 +24,9 @@ export interface Progress
     position: Seconds;
     updatedAt: number;
 }
+
+export interface FolderContents
+{
+    folderPath: string;
+    files: string[];
+}
