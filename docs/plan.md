@@ -87,6 +87,18 @@ Replace `music-metadata` with our own parser, as a learning exercise. Estimate: 
 - **Smallest first step (an evening):** box walker + `chpl` reader that prints the tree for the real files, to see which chapter format they actually use.
 - *Concepts:* `DataView`/`Buffer` (big-endian by default), `bigint` and the 2^53 limit of `number`, `fs.promises` `FileHandle.read` (≈ `pread`), safe parsing of untrusted binary input.
 
+## Future idea: automatically generated subtitles (read-along)
+Transcribe a book's audio locally and show the current sentence while it plays. Later extras: search the book's text, tap a line to jump to it. Prerequisites: milestones 4–6 (audio served, player UI, progress).
+- **Must stay offline:** speech recognition runs on this machine. Candidates:
+  - **whisper.cpp** (C++, CPU or GPU): run as a bundled CLI from main via `child_process`/`utilityProcess`, or as a native addon. Probably the best fit, and plays to the user's C++ background.
+  - **transformers.js** (Whisper as ONNX, pure JS/WASM): no native build, but slower.
+- **Model file:** 75 MB (tiny/base) to ~3 GB (large). Nothing may be downloaded at runtime, so either bundle a small model or let the user pick a model file from disk.
+- **Audio input:** Whisper wants 16 kHz mono PCM. Decoding a 10+ hour AAC file needs a decoder (e.g. a bundled ffmpeg, or whisper.cpp built with ffmpeg support); avoid decoding the whole book into memory at once.
+- **Cost:** a long book can take a long time (minutes to hours, depending on model and hardware). Run it in the background, process chapter by chapter, save partial results so it can resume, and show progress in the UI.
+- **Output:** WebVTT/SRT (or JSON segments `{ start, end, text }`) cached in `userData`, keyed by book id. Display either via `<track kind="subtitles">` on the `<audio>` element or a custom panel synced to `timeupdate` (reuse the `getChapterAt`-style lookup for segments).
+- **Security:** the transcriber is another parser of untrusted input running with main's privileges; pass it only paths already checked against the library folder.
+- *Concepts:* child processes / `utilityProcess` / worker threads, streaming large data, IPC progress events (main → page push, not just `invoke`), native addons vs CLI tools, WebVTT.
+
 ## Verification (each milestone)
 - `npx tsc --noEmit`, `npx tsc --noEmit -p src/page`, and `npm run lint` pass.
 - Run with F5 ("Run App (dev)") or `npm run dev-start`; check the terminal (main) and DevTools (page) for errors.

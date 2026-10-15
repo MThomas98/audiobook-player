@@ -18,15 +18,11 @@ export interface Book
     coverDataUrl?: string;
 }
 
+export type Library = Book[];
+
 export interface Progress
 {
     bookId: string;
     position: Seconds;
     updatedAt: number;
-}
-
-export interface FolderContents
-{
-    folderPath: string;
-    files: string[];
 }

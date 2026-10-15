@@ -1,31 +1,61 @@
 import { app, BrowserWindow, dialog, ipcMain } from "electron";
-import { readdir } from "node:fs/promises";
-import { basename, join } from "node:path";
-import { parseFile } from "music-metadata";
+import { join } from "node:path";
 
 import { expectString, expectProgress } from "./typeCheckers";
-import { findAudiobookFiles } from "./library";
+import { constructBookFromFile, constructBooksFromFolder } from "./library";
 
-import type { FolderContents, Progress, Book } from "../shared/types";
+import type { Progress, Library } from "../shared/types";
 import type { Api } from "../shared/api";
 
-let selectedFolder: FolderContents | null = null;
+const library: Library = [];
 
 // ==== IPC Handlers ==== ///
 
-async function handleSelectFolder(): Promise<FolderContents | null>
+async function handleAddFolderToLibrary(): Promise<Library>
 {
     const result = await dialog.showOpenDialog({ properties: ["openDirectory"] });
     if (result.canceled)
     {
-        return null;
+        return library;
     }
 
     const folderPath = result.filePaths[0];
-    const files = await readdir(folderPath);
-    selectedFolder = { folderPath, files };
+    try
+    {
+        library.push(...await constructBooksFromFolder(folderPath));
+    }
+    catch (err)
+    {
+        console.error(`Failed to read audiobooks in "${folderPath}": ${err}`);
+    }
 
-    return selectedFolder;
+    return library;
+}
+
+async function handleAddFileToLibrary(): Promise<Library>
+{
+    const result = await dialog.showOpenDialog({ properties: ["openFile"] });
+    if (result.canceled)
+    {
+        return library;
+    }
+
+    const filePath = result.filePaths[0];
+    try
+    {
+        library.push(await constructBookFromFile(filePath));
+    }
+    catch (err)
+    {
+        console.error(`Failed to read audiobook at "${filePath}": ${err}`);
+    }
+
+    return library;
+}
+
+async function handleGetLibrary(): Promise<Library>
+{
+    return library;
 }
 
 async function handleGetProgress(bookId: string): Promise<Progress | null>
@@ -39,41 +69,15 @@ async function handleSaveProgress(progress: Progress): Promise<void>
     // TODO
 }
 
-async function handleScanFolder(): Promise<Book[]>
-{
-    if (selectedFolder === null)
-    {
-        throw new Error("Cannot scan folder as no folder is selected - call window.api.selectFolder() first.");
-    }
-
-    const bookFiles = await findAudiobookFiles(selectedFolder.folderPath);
-
-    const books: Book[] = [];
-    for (const bookIndex in bookFiles)
-    {
-        const filePath = bookFiles[bookIndex];
-        const metadata = await parseFile(filePath, { includeChapters: true });
-
-        books.push({
-            id: bookIndex,
-            filePath: filePath,
-            title: metadata.common.title ?? basename(filePath),
-            chapters: [], // TODO
-            duration: metadata.format.duration ?? 0,
-            author: metadata.common.artist,
-        });
-    }
-
-    return books;
-}
-
 type Handlers = { [C in keyof Api]: (...args: unknown[]) => ReturnType<Api[C]> };
 
 const handlers: Handlers = {
-    selectFolder: handleSelectFolder,
+    addFolderToLibrary: handleAddFolderToLibrary,
+    addFileToLibrary: handleAddFileToLibrary,
+    getLibrary: handleGetLibrary,
+
     getProgress: async bookId => handleGetProgress(expectString(bookId, "bookId")),
     saveProgress: async progress => handleSaveProgress(expectProgress(progress, "progress")),
-    scanFolder: handleScanFolder,
 };
 
 // ======== //
