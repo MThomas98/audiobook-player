@@ -1,8 +1,9 @@
 import { app, BrowserWindow, dialog, ipcMain } from "electron";
 import { join } from "node:path";
 
-import { expectString, expectProgress } from "./typeCheckers";
+import { expectString, expectProgress } from "./checkers";
 import { constructBookFromFile, constructBooksFromFolder } from "./library";
+import { handleScheme, registerScheme } from "./protocol";
 
 import type { Progress, Library } from "../shared/types";
 import type { Api } from "../shared/api";
@@ -107,12 +108,16 @@ function createWindow(): void
     }
 }
 
+registerScheme();
+
 app.whenReady().then(() =>
 {
     for (const [channel, handler] of Object.entries(handlers))
     {
         ipcMain.handle(channel, (_event, ...args: unknown[]) => handler(...args));
     }
+
+    handleScheme(library);
 
     createWindow();
 });

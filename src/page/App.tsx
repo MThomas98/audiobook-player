@@ -1,10 +1,12 @@
 import { useState } from "react";
 
-import { Library } from "../shared/types";
+import { BookID, Library } from "../shared/types";
+import { audiobookUrl } from "../shared/urls";
 
 export function App()
 {
     const [library, setLibrary] = useState<Library>(new Map());
+    const [currentBookId, setCurrentBookId] = useState<BookID | null>(null);
 
     async function handleChooseFolder()
     {
@@ -23,10 +25,12 @@ export function App()
             <h1>Morgiobooks</h1>
             <button onClick={handleChooseFolder}>Add folder to library</button>
             <button onClick={handleChooseFile}>Add file to library</button>
+            <br />
+            {currentBookId !== null && <audio controls autoPlay src={audiobookUrl(currentBookId)} />}
             <ul>
                 {library.size > 0 && <h2>Library: </h2>}
                 {[...library].map(([bookId, book]) => (
-                    <li key={bookId}>
+                    <li key={bookId} onClick={() => setCurrentBookId(bookId)}>
                         <b>{`${book.title} (${book.author ?? "Unknown Authour"})`}</b>
                         <br />
                         {book.coverDataUrl && <img src={book.coverDataUrl} alt="" width={256} />}

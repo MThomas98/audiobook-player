@@ -15,25 +15,35 @@ A Windows desktop audiobook player (Electron + React + TypeScript), built as a l
 - `npm run build`: `tsc` (main/preload/shared) then `vite build` (page).
 - `npm run lint` / `npm run format` (`eslint --fix`; there is no Prettier).
 - Type-check: `npx tsc --noEmit` and `npx tsc --noEmit -p src/page`.
-- VS Code F5: "Run App" (built) or "Run App (dev)" (Vite dev server, debugger attached to main). `.vscode/` is gitignored.
+- VS Code F5: "Run App" (built) or "Run App (dev)" (Vite dev server, debugger attached to main). `.vscode/` is gitignored. React dev warnings (e.g. missing `key`) only appear in the dev variant.
+- `npm run test-media [-- --long]`: generates test audiobooks into `test-media/` (gitignored) with ffmpeg (`scripts/make-test-media.mjs`): playable books with/without chapters, tags and cover, a nested folder, ALAC/AC-3 files and broken files that must be skipped. `--long` adds a 10-hour book.
 
 ## Layout and environments
 - `src/main/`, `src/preload/` and `src/shared/`: Node environment, root `tsconfig.json`, compiled by `tsc` to `dist/` as CommonJS.
 - `src/page/`: browser environment, `src/page/tsconfig.json` (`module: preserve`, DOM lib, `noEmit`), built by Vite to `dist/page/`.
 - `src/shared/` is type-checked under **both** configs. It must only contain plain types and pure logic (no Node or DOM APIs).
 - `src/shared/api.ts` holds the `Api` contract. The preload implements it (`const api: Api`), and `src/page/global.d.ts` types `window.api`.
-- `vite.config.mts` has a small CSP plugin: strict `default-src 'self'` in builds; inline scripts/styles allowed only on the dev server.
+- IPC channel names are the `Api` method names. Main registers a `handlers` object typed `{ [C in keyof Api]: (...args: unknown[]) => ReturnType<Api[C]> }` (a missing or wrongly typed handler is a compile error); the preload builds `api` with a typed `invoker(channel)`. Handler entries validate arguments with `expect*` functions from `src/main/typeCheckers.ts`, then call typed `handleX` functions.
+- `src/main/library.ts`: finding and parsing audiobooks (`music-metadata`). It imports only Node modules, not Electron, so it stays testable outside the app.
+- Main owns the library (`Map<BookID, Book>`); the page only displays what IPC calls return. A `BookID` is the file's normalized absolute path (`resolve` + lowercase + `/`).
+- `src/shared/types.ts`: domain types (`Seconds`, `Chapter`, `Book`, `BookID`, `Library`, `Progress`). `src/shared/book.ts`: pure book logic (`getChapterAt`).
+- `vite.config.mts` has a small CSP plugin: `default-src 'self'; img-src 'self' data:` in builds (data: for cover art); inline scripts/styles allowed only on the dev server.
 
 ## Conventions
-- Style is enforced by ESLint Stylistic: Allman braces, 4-space indent, double quotes, semicolons.
+- Style is enforced by ESLint Stylistic: Allman braces, 4-space indent, double quotes, semicolons, binary operators at the end of a line.
+- Import order (`import-x/order`): external and Node imports, blank line, project imports, blank line, `import type` lines.
+- File names: camelCase for modules (`typeCheckers.ts`), PascalCase for React components (`App.tsx`).
 - `interface` for object shapes, `type` for unions and aliases. String-literal unions, not `enum`.
 - Named exports for project code. Use `import type` for type-only imports.
-- Data crossing IPC or saved as JSON must be plain data (no classes, functions, `Map` or `Date`).
+- IPC (structured clone, and `contextBridge`) may carry `Map`: the `Library` type is a `Map` (decision by the user; verified working). No classes (the prototype and methods are lost, but TS still thinks they exist) or functions across IPC.
+- Anything saved as JSON must be plain data: convert `Map`s to arrays when saving (`JSON.stringify` turns a `Map` into `{}` silently).
+- Times are stored in seconds (`Seconds`); convert external units (e.g. MP4 ticks / `timeScale`) at the boundary.
 
 ## Security rules
 - The page never gets `ipcRenderer` or Node. It only gets what the preload exposes via `contextBridge`.
 - IPC handlers in main treat arguments as `unknown` and validate them.
-- The page must not be able to name arbitrary paths. Main remembers the library folder the user chose; check paths with `realpath` + `path.relative` (never `startsWith`).
+- The page must not be able to name arbitrary paths. The library can hold several folders and individually added files, so the allowlist is the set of books in main's library: the page refers to books by `BookID`, and main looks the ID up in the library map and rejects unknown IDs. Never treat a `BookID` from the page as a path (it looks like one). Where folder containment matters, use `realpath` + `path.relative` (never `startsWith`).
+- Book files are untrusted input parsed in privileged main: skip unreadable files per file, and only accept known-playable codecs (allowlist).
 - Keep the CSP strict. Only loosen it for a specific need (e.g. `img-src 'self' data:` for cover art).
 
 ## Gotchas
@@ -42,4 +52,8 @@ A Windows desktop audiobook player (Electron + React + TypeScript), built as a l
 - **`@types/node` must match Electron's Node major version** (Electron 44 → Node 24). Recheck it when upgrading Electron.
 - `tsc` never deletes stale output files in `dist/`; delete them by hand after moving or renaming files.
 - Electron's types describe one `electron` module containing both main and renderer APIs, so `tsc` won't flag e.g. `ipcRenderer` used in main. In plain Node scripts (`dev.mjs`), `require("electron")` is the path to `electron.exe`, not the API.
-- `music-metadata` is ESM-only and main is CommonJS. It should load through Node 24's `require(esm)`. If it doesn't, switch main to ESM or bundle it.
+- `music-metadata` is ESM-only and main is CommonJS; it loads fine through Node 24's `require(esm)` (verified). It is a runtime `dependency`, not a `devDependency`.
+- **Codec support (verified with `canPlayType` in Electron 44):** AAC, Opus and FLAC in MP4 play; ALAC, AC-3 and E-AC-3 don't. `music-metadata`'s `format.codec` only names AAC/MP3/ALAC/AC-3 (joined with `+` across tracks; unknown codecs are omitted), so Opus/FLAC-in-MP4 are rejected by the allowlist.
+- **Case-only renames on Windows:** git ignores them by default. Use two `git mv` steps (`app.tsx` → `tmp.tsx` → `App.tsx`), or imports break on case-sensitive systems.
+- Setting `"lib": ["es2025"]` in the root tsconfig breaks `electron.d.ts` (it references DOM types). Use `skipLibCheck` if DOM types should ever be kept out of main.
+- ESLint has no Node globals configured for `.mjs` scripts: import `process`, `console`, `Buffer` from `node:` modules explicitly.
