@@ -26,7 +26,14 @@ export function App()
             <ul>
                 {library.size > 0 && <h2>Library: </h2>}
                 {[...library].map(([bookId, book]) => (
-                    <li key={bookId}>{`${book.title} (${book.author ?? "Unknown Authour"})`}</li>
+                    <li key={bookId}>
+                        {`${book.title} (${book.author ?? "Unknown Authour"})`}
+                        <br />
+                        Chapters:
+                        <ul>
+                            {book.chapters.map(chapter => (<li>{chapter.title}</li>))}
+                        </ul>
+                    </li>
                 ))}
             </ul>
 
