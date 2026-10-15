@@ -1,6 +1,6 @@
 import { readdir } from "node:fs/promises";
 import { basename, extname, join, resolve } from "node:path";
-import { parseFile, type IChapter } from "music-metadata";
+import { IPicture, parseFile, selectCover, type IChapter } from "music-metadata";
 
 import type { Book, BookID, Chapter, Seconds } from "../shared/types";
 
@@ -34,6 +34,17 @@ function createChapters(rawChapters: readonly IChapter[] | undefined, duration: 
     }));
 };
 
+function createCoverDataUrl(rawPicture: IPicture[] | undefined): string | undefined
+{
+    const cover = selectCover(rawPicture);
+    if (cover === null)
+    {
+        return undefined;
+    }
+
+    return `data:${cover.format};base64,${Buffer.from(cover.data).toString("base64")}`;
+}
+
 export async function findAudiobookFiles(rootFolder: string): Promise<string[]>
 {
     const entries = await readdir(rootFolder, { recursive: true, withFileTypes: true });
@@ -55,6 +66,7 @@ export async function constructBookFromFile(filePath: string): Promise<[BookID, 
         duration: metadata.format.duration ?? 0,
         author: metadata.common.artist,
         chapters: [],
+        coverDataUrl: createCoverDataUrl(metadata.common.picture),
     };
 
     book.chapters = createChapters(metadata.format.chapters, book.duration, book.title);

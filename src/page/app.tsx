@@ -29,6 +29,8 @@ export function App()
                     <li key={bookId}>
                         {`${book.title} (${book.author ?? "Unknown Authour"})`}
                         <br />
+                        {book.coverDataUrl && <img src={book.coverDataUrl} alt="" width={256} />}
+                        <br />
                         Chapters:
                         <ul>
                             {book.chapters.map(chapter => (<li>{chapter.title}</li>))}

@@ -1,8 +1,8 @@
 import { defineConfig, type Plugin } from "vite";
 import react from "@vitejs/plugin-react";
 
-const DEV_POLICY = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'";
-const STRICT_POLICY = "default-src 'self'";
+const DEV_POLICY = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:";
+const STRICT_POLICY = "default-src 'self'; img-src 'self' data:";
 
 function contentSecurityPolicy(): Plugin
 {
