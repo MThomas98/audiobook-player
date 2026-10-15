@@ -7,7 +7,7 @@ import { constructBookFromFile, constructBooksFromFolder } from "./library";
 import type { Progress, Library } from "../shared/types";
 import type { Api } from "../shared/api";
 
-const library: Library = [];
+const library: Library = new Map();
 
 // ==== IPC Handlers ==== ///
 
@@ -22,7 +22,10 @@ async function handleAddFolderToLibrary(): Promise<Library>
     const folderPath = result.filePaths[0];
     try
     {
-        library.push(...await constructBooksFromFolder(folderPath));
+        for (const [bookId, book] of await constructBooksFromFolder(folderPath))
+        {
+            library.set(bookId, book);
+        }
     }
     catch (err)
     {
@@ -43,7 +46,8 @@ async function handleAddFileToLibrary(): Promise<Library>
     const filePath = result.filePaths[0];
     try
     {
-        library.push(await constructBookFromFile(filePath));
+        const [bookId, book] = await constructBookFromFile(filePath);
+        library.set(bookId, book);
     }
     catch (err)
     {

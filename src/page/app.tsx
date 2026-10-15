@@ -4,7 +4,7 @@ import { Library } from "../shared/types";
 
 export function App()
 {
-    const [library, setLibrary] = useState<Library>([]);
+    const [library, setLibrary] = useState<Library>(new Map());
 
     async function handleChooseFolder()
     {
@@ -24,9 +24,9 @@ export function App()
             <button onClick={handleChooseFolder}>Add folder to library</button>
             <button onClick={handleChooseFile}>Add file to library</button>
             <ul>
-                {library.length != 0 ? <h2>Library: </h2> : ""}
-                {library.map(book => (
-                    <li key={book.id}>{`${book.title} (${book.author ?? "Unknown Authour"})`}</li>
+                {library.size > 0 && <h2>Library: </h2>}
+                {[...library].map(([bookId, book]) => (
+                    <li key={bookId}>{`${book.title} (${book.author ?? "Unknown Authour"})`}</li>
                 ))}
             </ul>
 

@@ -7,9 +7,11 @@ export interface Chapter
     end: Seconds;
 }
 
+export type BookID = string;
+
 export interface Book
 {
-    id: string;
+    id: BookID;
     filePath: string;
     title: string;
     author?: string;
@@ -18,7 +20,7 @@ export interface Book
     coverDataUrl?: string;
 }
 
-export type Library = Book[];
+export type Library = Map<BookID, Book>;
 
 export interface Progress
 {

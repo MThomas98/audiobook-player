@@ -1,13 +1,12 @@
 import { readdir } from "node:fs/promises";
 import { basename, extname, join, resolve } from "node:path";
 import { parseFile } from "music-metadata";
-import { fileURLToPath } from "node:url";
 
-import { Book } from "../shared/types";
+import type { Book, BookID } from "../shared/types";
 
 const AUDIOBOOK_EXT: ReadonlySet<string> = new Set([".mp4", ".m4a", ".m4b"]);
 
-function createBookID(filePath: string): string
+function createBookID(filePath: string): BookID
 {
     return resolve(filePath).toLowerCase().replaceAll("\\", "/");
 }
@@ -21,23 +20,27 @@ export async function findAudiobookFiles(rootFolder: string): Promise<string[]>
         .map(entry => join(entry.parentPath, entry.name));
 }
 
-export async function constructBookFromFile(filePath: string): Promise<Book>
+export async function constructBookFromFile(filePath: string): Promise<[BookID, Book]>
 {
     const metadata = await parseFile(filePath, { includeChapters: true });
+    const bookId = createBookID(filePath);
 
-    return {
-        id: createBookID(filePath),
-        filePath: resolve(filePath),
-        title: metadata.common.title ?? basename(filePath),
-        chapters: [], // TODO
-        duration: metadata.format.duration ?? 0,
-        author: metadata.common.artist,
-    };
+    return [
+        bookId,
+        {
+            id: bookId,
+            filePath: resolve(filePath),
+            title: metadata.common.title ?? basename(filePath).split(".")[0],
+            chapters: [], // TODO
+            duration: metadata.format.duration ?? 0,
+            author: metadata.common.artist,
+        },
+    ];
 }
 
-export async function constructBooksFromFolder(rootFolder: string): Promise<Book[]>
+export async function constructBooksFromFolder(rootFolder: string): Promise<[BookID, Book][]>
 {
-    const books: Book[] = [];
+    const books: [BookID, Book][] = [];
 
     const files = await findAudiobookFiles(rootFolder);
     for (const file of files)
