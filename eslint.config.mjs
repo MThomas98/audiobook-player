@@ -5,7 +5,7 @@ import stylistic from "@stylistic/eslint-plugin";
 import importX from "eslint-plugin-import-x";
 
 export default defineConfig(
-    { ignores: ["dist/**"] },
+    { ignores: ["dist/**", "dist-test/**"] },
     js.configs.recommended,
     tseslint.configs.recommended,
     stylistic.configs.customize({

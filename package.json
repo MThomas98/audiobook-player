@@ -9,7 +9,8 @@
         "dev-start": "tsc && node scripts/dev.mjs",
         "lint": "eslint .",
         "format": "eslint . --fix",
-        "test-media": "node scripts/make-test-media.mjs"
+        "test-media": "node scripts/make-test-media.mjs",
+        "test": "tsc -p test && node --test \"dist-test/**/*test.js\""
     },
     "keywords": [],
     "author": "",

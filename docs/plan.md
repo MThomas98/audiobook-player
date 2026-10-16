@@ -74,7 +74,8 @@ Note: setting `"lib": ["es2025"]` in the root tsconfig breaks `electron.d.ts` (i
 
 **7. Polish.** `navigator.mediaSession` (media keys, Windows media overlay), sleep timer, keyboard shortcuts. Optional hardening: block all network requests from the page in main (second layer alongside the CSP). CSP will need `img-src 'self' data:` for cover art.
 
-**8. Tests and packaging.** Vitest for pure functions (`getChapterAt`, time formatting). `electron-builder --win` installer (no auto-updater).
+**8. Tests and packaging.** Vitest for pure functions (`getChapterAt`, `parseRange`, time formatting). `electron-builder --win` installer (no auto-updater).
+- Unit tests started early (milestone 4) with Node's built-in runner (`node:test` + `node:assert`) to see the bare mechanism, starting with `parseRange`. In this milestone, switch to Vitest (it also covers the page) and port or remove the raw `node:test` tests.
 
 ## Side quest (optional, after milestone 5 or so): hand-written MP4 reader
 Replace `music-metadata` with our own parser, as a learning exercise. Estimate: 3–5 days part-time, ~500–800 lines, for typical audiobook files.
