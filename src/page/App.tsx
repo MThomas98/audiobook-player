@@ -2,7 +2,7 @@ import { useState } from "react";
 
 import { BookID, Library } from "../shared/types";
 import { audiobookUrl, coverUrl } from "../shared/urls";
-import defaultCover from "./assets/default-cover.png";
+import defaultCover from "./assets/logo-no-text.png";
 
 export function App()
 {
