@@ -1,8 +1,10 @@
 import { useState } from "react";
 
-import { BookID, Library } from "../shared/types";
-import { audiobookUrl, coverUrl } from "../shared/urls";
-import defaultCover from "./assets/logo-no-text.png";
+import { audiobookUrl } from "../shared/urls";
+import logo from "./assets/logo.png";
+import { LibraryGrid } from "./LibraryGrid";
+
+import type { BookID, Library } from "../shared/types";
 
 export function App()
 {
@@ -23,28 +25,14 @@ export function App()
 
     return (
         <main>
-            <h1>Morgiobooks</h1>
+            <img src={logo} width={256} />
+            <br />
             <button onClick={handleChooseFolder}>Add folder to library</button>
             <button onClick={handleChooseFile}>Add file to library</button>
             <br />
             {currentBookId !== null && <audio controls autoPlay src={audiobookUrl(currentBookId)} />}
-            <ul>
-                {library.size > 0 && <h2>Library: </h2>}
-                {[...library].map(([bookId, book]) => (
-                    <li key={bookId} onClick={() => setCurrentBookId(bookId)}>
-                        <b>{`${book.title} (${book.author ?? "Unknown Authour"})`}</b>
-                        <br />
-                        <img src={book.hasCover ? coverUrl(bookId) : defaultCover} alt="" width={256} />
-                        <br />
-                        Chapters:
-                        <ul>
-                            {book.chapters.slice(0, 5).map((chapter, index) => <li key={index}>{chapter.title}</li>)}
-                            {book.chapters.length > 5 && <li>...</li>}
-                        </ul>
-                    </li>
-                ))}
-            </ul>
-
+            <br />
+            <LibraryGrid library={library} onSelect={setCurrentBookId} />
         </main>
     );
 }

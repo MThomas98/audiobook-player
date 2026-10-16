@@ -1,4 +1,4 @@
-import { BookID } from "./types";
+import type { BookID } from "./types";
 
 export const SCHEME = "morgiobooks";
 export const AUDIOBOOK_HOST = "audiobook";

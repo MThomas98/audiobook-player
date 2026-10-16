@@ -82,7 +82,7 @@ Note: setting `"lib": ["es2025"]` in the root tsconfig breaks `electron.d.ts` (i
 - Write files safely (write to a temp file, then rename) so a crash mid-write can't corrupt them; validate loaded JSON as `unknown` like IPC input.
 *Concepts:* `Record`, `Partial`/`Pick`, validating untrusted JSON.
 
-**7. Polish.** `navigator.mediaSession` (media keys, Windows media overlay), sleep timer, keyboard shortcuts. Optional hardening: block all network requests from the page in main (second layer alongside the CSP).
+**7. Polish.** `navigator.mediaSession` (media keys, Windows media overlay), sleep timer, keyboard shortcuts. Library filtering: a search box that narrows the grid by title/author (case-insensitive, done in the page over the books it already has; no IPC). Optional hardening: block all network requests from the page in main (second layer alongside the CSP).
 
 **8. Tests and packaging.** Vitest for pure functions (`getChapterAt`, `parseRange`, time formatting). `electron-builder --win` installer (no auto-updater).
 - Unit tests started early (milestone 4) with Node's built-in runner (`node:test` + `node:assert`) to see the bare mechanism, starting with `parseRange`. In this milestone, switch to Vitest (it also covers the page) and port or remove the raw `node:test` tests.

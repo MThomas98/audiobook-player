@@ -1,4 +1,4 @@
-import { Progress } from "../shared/types";
+import type { Progress } from "../shared/types";
 
 export function expectString(value: unknown, name: string): string
 {

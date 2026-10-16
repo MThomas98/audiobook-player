@@ -1,0 +1,13 @@
+.library-grid
+{
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 16px;
+}
+
+.book-card .book-cover
+{
+    width: 100%;
+    aspect-ratio: 1;
+    object-fit: cover;
+}
