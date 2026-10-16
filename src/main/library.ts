@@ -2,10 +2,14 @@ import { readdir } from "node:fs/promises";
 import { basename, extname, join, resolve } from "node:path";
 import { type IPicture, parseFile, selectCover, type IChapter } from "music-metadata";
 
-import type { Book, BookID, Chapter, Seconds } from "../shared/types";
+import type { Book, BookID, Chapter, Library, Seconds } from "../shared/types";
 
 const AUDIOBOOK_EXT: ReadonlySet<string> = new Set([".mp4", ".m4a", ".m4b"]);
+const COVER_FORMATS: ReadonlySet<string> = new Set(["image/jpeg", "image/png"]);
 const PLAYABLE_CODECS: ReadonlySet<string> = new Set(["MPEG-4/AAC", "MPEG-1 layer 3"]);
+
+const covers = new Map<BookID, IPicture>();
+const library: Library = new Map();
 
 function createBookID(filePath: string): BookID
 {
@@ -35,17 +39,6 @@ function createChapters(rawChapters: readonly IChapter[] | undefined, duration: 
     }));
 }
 
-function createCoverDataUrl(rawPicture: IPicture[] | undefined): string | undefined
-{
-    const cover = selectCover(rawPicture);
-    if (cover === null)
-    {
-        return undefined;
-    }
-
-    return `data:${cover.format};base64,${Buffer.from(cover.data).toString("base64")}`;
-}
-
 function checkPlayable(codecs: string | undefined): boolean
 {
     const codecArray = codecs?.split("+") ?? [];
@@ -61,7 +54,7 @@ export async function findAudiobookFiles(rootFolder: string): Promise<string[]>
         .map(entry => join(entry.parentPath, entry.name));
 }
 
-export async function constructBookFromFile(filePath: string): Promise<[BookID, Book]>
+export async function addFileToLibrary(filePath: string): Promise<Library>
 {
     const metadata = await parseFile(filePath, { includeChapters: true });
 
@@ -71,6 +64,18 @@ export async function constructBookFromFile(filePath: string): Promise<[BookID, 
     }
 
     const bookId = createBookID(filePath);
+
+    const cover = selectCover(metadata.common.picture);
+    if (cover !== null && COVER_FORMATS.has(cover.format))
+    {
+        covers.set(bookId, cover);
+    }
+    else
+    {
+        // Remove a stale cover on re-scan
+        covers.delete(bookId);
+    }
+
     const book: Book = {
         id: bookId,
         filePath: resolve(filePath),
@@ -78,23 +83,22 @@ export async function constructBookFromFile(filePath: string): Promise<[BookID, 
         duration: metadata.format.duration ?? 0,
         author: metadata.common.artist,
         chapters: [],
-        coverDataUrl: createCoverDataUrl(metadata.common.picture),
+        hasCover: covers.has(bookId),
     };
     book.chapters = createChapters(metadata.format.chapters, book.duration, book.title);
 
-    return [bookId, book];
+    library.set(bookId, book);
+    return library;
 }
 
-export async function constructBooksFromFolder(rootFolder: string): Promise<[BookID, Book][]>
+export async function addFolderToLibrary(rootFolder: string): Promise<Library>
 {
-    const books: [BookID, Book][] = [];
-
     const files = await findAudiobookFiles(rootFolder);
     for (const file of files)
     {
         try
         {
-            books.push(await constructBookFromFile(file));
+            await addFileToLibrary(file);
         }
         catch (err)
         {
@@ -102,5 +106,15 @@ export async function constructBooksFromFolder(rootFolder: string): Promise<[Boo
         }
     }
 
-    return books;
+    return library;
+}
+
+export function getLibrary(): Library
+{
+    return library;
+}
+
+export function getCoverImage(bookId: BookID): IPicture | undefined
+{
+    return covers.get(bookId);
 }

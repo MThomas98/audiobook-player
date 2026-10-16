@@ -21,20 +21,26 @@ The user is a C++ engineer who knows JavaScript well and is new to TypeScript, E
 | Metadata | `music-metadata` 12.x in main, with `includeChapters: true` | Reads QuickTime chapter tracks and Nero `chpl` lists. **ESM-only package; main is CommonJS**: check `require(esm)` works at the start of milestone 3, otherwise switch main to ESM or bundle |
 | Audio | HTML `<audio>` in the page | Verified with `canPlayType` in Electron 44: AAC, Opus and FLAC in MP4 play; ALAC, AC-3 and E-AC-3 don't. Main uses an allowlist on `metadata.format.codec` (`"MPEG-4/AAC"`, `"MPEG-1 layer 3"`). music-metadata doesn't name Opus/FLAC-in-MP4, so those are rejected too (rare for audiobooks). Recheck when upgrading Electron |
 | Persistence | JSON file in `app.getPath('userData')` | |
-| Tests | Vitest | |
+| Tests | `node:test` for now (compiled with `tsc -p test`), Vitest in milestone 8 | |
 | Packaging | electron-builder, Windows installer | |
 
 ## Layout
 ```
 src/
-  main/main.ts         Node: window, IPC handler table, dialogs (later: library.ts, protocol.ts, progressStore.ts)
-  main/typeCheckers.ts Validators for IPC arguments: expectString, expectProgress (unknown -> typed)
+  main/main.ts         Node: window, IPC handler table, dialogs (later: progressStore.ts)
+  main/checkers.ts     Validators for IPC arguments: expectString, expectProgress (unknown -> typed)
+  main/library.ts      Scanning/parsing books; owns the library Map and the main-only covers Map
+  main/protocol.ts     morgiobooks:// scheme: streams audio (Range support) and serves covers
+  main/range.ts        Pure Range-header parsing: parseRange -> full | partial | unsatisfiable
   preload/preload.ts   Exposes window.api via contextBridge; implements the Api contract with a typed invoker
   shared/api.ts        Api contract (interface) used by main, preload and page
-  shared/types.ts      Domain types: Seconds, Chapter, Book, Progress, FolderContents
+  shared/types.ts      Domain types: Seconds, Chapter, Book, BookID, Library, Progress
   shared/book.ts       Pure book logic: getChapterAt
-  page/                React app: index.html, main.tsx, app.tsx, global.d.ts, tsconfig.json
+  shared/urls.ts       Scheme name and URL builders: audiobookUrl, coverUrl
+  page/                React app: index.html, main.tsx, App.tsx, global.d.ts, tsconfig.json
+test/                  Unit tests (node:test), own tsconfig, compiled to dist-test/
 scripts/dev.mjs        Dev launcher
+scripts/make-test-media.mjs  Test audiobook generator (ffmpeg)
 vite.config.mts        Vite config incl. a small CSP plugin (strict in builds, allows inline in dev)
 ```
 
@@ -45,10 +51,10 @@ vite.config.mts        Vite config incl. a small CSP plugin (strict in builds, a
 ```ts
 export type Seconds = number;
 export interface Chapter { title: string; start: Seconds; end: Seconds; }   // from start of book
-export interface Book { id: string; filePath: string; title: string; author?: string; duration: Seconds; chapters: readonly Chapter[]; coverDataUrl?: string; }
+export interface Book { id: string; filePath: string; title: string; author?: string; duration: Seconds; chapters: readonly Chapter[]; hasCover: boolean; }
 export interface Progress { bookId: string; position: Seconds; updatedAt: number; }   // updatedAt = Date.now()
 ```
-A file with no chapters is treated as one chapter covering the whole book. Implemented as `getChapterAt(chapters, position): Chapter | undefined` in `src/shared/book.ts` (`start <= position < end`; returns `undefined` at exactly the end of the book, which the player UI must handle). `FolderContents { folderPath; files }` also lives in `types.ts`.
+(`Book` originally had `coverDataUrl?: string`; replaced by `hasCover` in milestone 4.) A file with no chapters is treated as one chapter covering the whole book. Implemented as `getChapterAt(chapters, position): Chapter | undefined` in `src/shared/book.ts` (`start <= position < end`; returns `undefined` at exactly the end of the book, which the player UI must handle).
 Note: setting `"lib": ["es2025"]` in the root tsconfig breaks `electron.d.ts` (it references DOM types); the line was removed. `"skipLibCheck": true` is the alternative if DOM types should be kept out of main.
 *Concepts:* interface vs type, string-literal unions, optional properties, `readonly`, type aliases as documentation, plain data across IPC/JSON.
 
@@ -58,12 +64,16 @@ Note: setting `"lib": ["es2025"]` in the root tsconfig breaks `electron.d.ts` (i
 - `getProgress`/`saveProgress` are stubs until milestone 6 (their unused parameters are the only lint errors). `scanFolder` builds placeholder books from `FolderContents.files`; throws if no folder is selected.
 *Concepts covered:* generics with constraints (vs C++ concepts/SFINAE), `keyof`, indexed access, `ReturnType`/`Parameters`, mapped types, type assertions, `unknown` + narrowing, type predicates, erased generics (no `typeof T`), `for...of` vs `for...in`.
 
-**3. Library scanning — DONE** (`main/library.ts`). Recursive `readdir` for `.mp4`/`.m4a`/`.m4b`; `parseFile(path, { includeChapters: true })` (`require(esm)` works). Main holds `Library = Map<BookID, Book>` (BookID = normalized absolute path); `addFolderToLibrary`/`addFileToLibrary`/`getLibrary` return the whole library; cancelling returns it unchanged. Chapters: seconds = `start / timeScale`, each `end` = next start (last = duration); no chapters or a missing/zero `timeScale` → one whole-book chapter. Cover: `selectCover` → base64 data URL (CSP `img-src 'self' data:`). Codec allowlist (`MPEG-4/AAC`, `MPEG-1 layer 3`); unreadable/unplayable files are logged and skipped per file. Verified with `npm run test-media`. Open: failures aren't reported to the page; data-URL covers are large (move to the protocol in milestone 4).
+**3. Library scanning — DONE** (`main/library.ts`). Recursive `readdir` for `.mp4`/`.m4a`/`.m4b`; `parseFile(path, { includeChapters: true })` (`require(esm)` works). Main holds `Library = Map<BookID, Book>` (BookID = normalized absolute path); `addFolderToLibrary`/`addFileToLibrary`/`getLibrary` return the whole library; cancelling returns it unchanged. Chapters: seconds = `start / timeScale`, each `end` = next start (last = duration); no chapters or a missing/zero `timeScale` → one whole-book chapter. Cover: `selectCover` → base64 data URL at first (moved to the protocol in milestone 4). Codec allowlist (`MPEG-4/AAC`, `MPEG-1 layer 3`); unreadable/unplayable files are logged and skipped per file. Verified with `npm run test-media`. Open: failures aren't reported to the page.
 *Concepts:* third-party types, async fs, narrowing `unknown` errors.
 
-**4. Serving audio safely — NEXT** (`main/protocol.ts`). Privileged `audiobook://` scheme (`stream: true`) via `protocol.handle`; URL `audiobook://book/<encodeURIComponent(BookID)>`. Main looks the ID up in the library map (unknown → 404) and serves that book's `filePath`; the page never supplies a path. Must support range requests/seeking in multi-hundred-MB files: try `net.fetch(pathToFileURL(...))` first, test seeking with the 10-hour test book, and fall back to answering `Range` requests by hand (206 + `createReadStream({ start, end })`). CSP needs `media-src audiobook:`. Later: serve covers the same way (`audiobook://cover/<id>`) instead of data URLs.
+**4. Serving audio safely — DONE** (`main/protocol.ts`, `main/range.ts`). Privileged `morgiobooks://` scheme (`standard`, `secure`, `stream`) via `protocol.handle`, routed by host: `morgiobooks://audiobook/<encodeURIComponent(BookID)>` and `morgiobooks://covers/<id>`. Main looks the ID up in the library map (unknown → 404); the page never supplies a path.
+- **Seeking:** `net.fetch(pathToFileURL(...))` was tried first, but it ignores `Range` for `file:` URLs (always 200 + whole file, no `Accept-Ranges`), so Chromium read the whole file to reach `moov` and every seek restarted at 0 (issue #1). Now answered by hand: `stat` → `parseRange` (pure; 200 / 206 / 416 per RFC 9110, "invalid" ranges ignored, "unsatisfiable" → 416 with `bytes */size`) → `createReadStream({ start, end })` + `Readable.toWeb` as the body. Verified seeking in the 10-hour book.
+- **Covers:** kept in main (`Map<BookID, IPicture>` in `library.ts`, only `image/jpeg`/`image/png`), served from memory with `Content-Type` = stored format. `Book.hasCover` replaces `coverDataUrl`, so covers no longer cross IPC as base64. CSP: `img-src morgiobooks:; media-src morgiobooks:` (`data:` removed).
+- **Tests:** first unit tests (`test/range.test.ts`, `node:test`), see milestone 8.
+*Concepts:* HTTP request/response, Range/206/416, streams and backpressure (Node vs web streams), discriminated unions, regex `exec`, definite assignment, `node:test`.
 
-**5. Library and player UI.** `LibraryGrid` → `BookCard`, `PlayerBar`, `ChapterList`. `useAudioPlayer` hook wraps `<audio>`: play/pause, seek, ±30s, speed 0.75–2×, chapter navigation (seeking within the one file; no track switching).
+**5. Library and player UI — NEXT.** `LibraryGrid` → `BookCard`, `PlayerBar`, `ChapterList`. `useAudioPlayer` hook wraps `<audio>`: play/pause, seek, ±30s, speed 0.75–2×, chapter navigation (seeking within the one file; no track switching).
 *Concepts:* typed props, `useRef<HTMLAudioElement>`, typed event handlers, discriminated unions for player state, `key` in lists.
 
 **6. Remember the library and resume where you left off** (`main/libraryStore.ts`, `main/progressStore.ts`).
@@ -72,10 +82,11 @@ Note: setting `"lib": ["es2025"]` in the root tsconfig breaks `electron.d.ts` (i
 - Write files safely (write to a temp file, then rename) so a crash mid-write can't corrupt them; validate loaded JSON as `unknown` like IPC input.
 *Concepts:* `Record`, `Partial`/`Pick`, validating untrusted JSON.
 
-**7. Polish.** `navigator.mediaSession` (media keys, Windows media overlay), sleep timer, keyboard shortcuts. Optional hardening: block all network requests from the page in main (second layer alongside the CSP). CSP will need `img-src 'self' data:` for cover art.
+**7. Polish.** `navigator.mediaSession` (media keys, Windows media overlay), sleep timer, keyboard shortcuts. Optional hardening: block all network requests from the page in main (second layer alongside the CSP).
 
 **8. Tests and packaging.** Vitest for pure functions (`getChapterAt`, `parseRange`, time formatting). `electron-builder --win` installer (no auto-updater).
 - Unit tests started early (milestone 4) with Node's built-in runner (`node:test` + `node:assert`) to see the bare mechanism, starting with `parseRange`. In this milestone, switch to Vitest (it also covers the page) and port or remove the raw `node:test` tests.
+- The CommonJS setup (`"type": "commonjs"`) blocks Node's type stripping (why tests are compiled with `tsc` first) and Vite's future native config loader (warning on `vite.config.mts` importing `src/shared/urls.ts`). Decide here whether to move to ESM or keep CommonJS.
 
 ## Side quest (optional, after milestone 5 or so): hand-written MP4 reader
 Replace `music-metadata` with our own parser, as a learning exercise. Estimate: 3–5 days part-time, ~500–800 lines, for typical audiobook files.

@@ -4,8 +4,9 @@ import { createReadStream } from "node:fs";
 import { Readable } from "node:stream";
 import { stat } from "node:fs/promises";
 
-import { SCHEME, AUDIOBOOK_HOST } from "../shared/urls";
+import { SCHEME, AUDIOBOOK_HOST, COVER_HOST } from "../shared/urls";
 import { parseRange } from "./range";
+import { getCoverImage, getLibrary } from "./library";
 
 import type { Library } from "../shared/types";
 
@@ -17,14 +18,19 @@ export function registerScheme(): void
     }]);
 }
 
-export function handleScheme(library: Library): void
+export function handleScheme(): void
 {
+    const library = getLibrary();
     protocol.handle(SCHEME, async (request) =>
     {
         const url = new URL(request.url);
         if (url.hostname === AUDIOBOOK_HOST)
         {
             return handleAudiobookRequest(url, request, library);
+        }
+        if (url.hostname === COVER_HOST)
+        {
+            return handleCoverRequest(url, library);
         }
 
         return new Response("Not found", { status: 404 });
@@ -96,4 +102,28 @@ async function handleAudiobookRequest(url: URL, request: Request, library: Libra
             return streamFile(book.filePath, size, rangeResult.start, rangeResult.end);
         }
     }
+}
+
+async function handleCoverRequest(url: URL, library: Library): Promise<Response>
+{
+    assert(url.hostname === COVER_HOST, "Tried handling a cover request from a non-cover URI");
+
+    const book = library.get(decodeURIComponent(url.pathname.slice(1)));
+    if (book === undefined)
+    {
+        return new Response("Not found", { status: 404 });
+    }
+
+    const cover = getCoverImage(book.id);
+    if (cover === undefined)
+    {
+        return new Response("Not found", { status: 404 });
+    }
+
+    return new Response(cover.data as Uint8Array<ArrayBuffer>, {
+        headers: {
+            "Content-Type": cover.format,
+            "Content-Length": String(cover.data.byteLength),
+        },
+    });
 }

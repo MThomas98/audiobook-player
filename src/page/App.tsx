@@ -1,7 +1,8 @@
 import { useState } from "react";
 
 import { BookID, Library } from "../shared/types";
-import { audiobookUrl } from "../shared/urls";
+import { audiobookUrl, coverUrl } from "../shared/urls";
+import defaultCover from "./assets/default-cover.png";
 
 export function App()
 {
@@ -33,7 +34,7 @@ export function App()
                     <li key={bookId} onClick={() => setCurrentBookId(bookId)}>
                         <b>{`${book.title} (${book.author ?? "Unknown Authour"})`}</b>
                         <br />
-                        {book.coverDataUrl && <img src={book.coverDataUrl} alt="" width={256} />}
+                        <img src={book.hasCover ? coverUrl(bookId) : defaultCover} alt="" width={256} />
                         <br />
                         Chapters:
                         <ul>

@@ -3,8 +3,8 @@ import react from "@vitejs/plugin-react";
 
 import { SCHEME } from "./src/shared/urls";
 
-const DEV_POLICY = `default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src ${SCHEME}:`;
-const STRICT_POLICY = `default-src 'self'; img-src 'self' data:; media-src ${SCHEME}:`;
+const DEV_POLICY = `default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' ${SCHEME}:; media-src ${SCHEME}:`;
+const STRICT_POLICY = `default-src 'self'; img-src 'self' ${SCHEME}:; media-src ${SCHEME}:`;
 
 function contentSecurityPolicy(): Plugin
 {

@@ -17,7 +17,7 @@ export interface Book
     author?: string;
     duration: Seconds;
     chapters: readonly Chapter[];
-    coverDataUrl?: string;
+    hasCover: boolean;
 }
 
 export type Library = Map<BookID, Book>;

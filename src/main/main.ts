@@ -2,65 +2,55 @@ import { app, BrowserWindow, dialog, ipcMain } from "electron";
 import { join } from "node:path";
 
 import { expectString, expectProgress } from "./checkers";
-import { constructBookFromFile, constructBooksFromFolder } from "./library";
+import { addFileToLibrary, addFolderToLibrary, getLibrary } from "./library";
 import { handleScheme, registerScheme } from "./protocol";
 
 import type { Progress, Library } from "../shared/types";
 import type { Api } from "../shared/api";
-
-const library: Library = new Map();
 
 // ==== IPC Handlers ==== ///
 
 async function handleAddFolderToLibrary(): Promise<Library>
 {
     const result = await dialog.showOpenDialog({ properties: ["openDirectory"] });
-    if (result.canceled)
+    if (!result.canceled)
     {
-        return library;
-    }
-
-    const folderPath = result.filePaths[0];
-    try
-    {
-        for (const [bookId, book] of await constructBooksFromFolder(folderPath))
+        const folderPath = result.filePaths[0];
+        try
         {
-            library.set(bookId, book);
+            await addFolderToLibrary(folderPath);
+        }
+        catch (err)
+        {
+            console.error(`Failed to read audiobooks in "${folderPath}": ${err}`);
         }
     }
-    catch (err)
-    {
-        console.error(`Failed to read audiobooks in "${folderPath}": ${err}`);
-    }
 
-    return library;
+    return getLibrary();
 }
 
 async function handleAddFileToLibrary(): Promise<Library>
 {
     const result = await dialog.showOpenDialog({ properties: ["openFile"] });
-    if (result.canceled)
+    if (!result.canceled)
     {
-        return library;
+        const filePath = result.filePaths[0];
+        try
+        {
+            await addFileToLibrary(filePath);
+        }
+        catch (err)
+        {
+            console.error(`Failed to read audiobook at "${filePath}": ${err}`);
+        }
     }
 
-    const filePath = result.filePaths[0];
-    try
-    {
-        const [bookId, book] = await constructBookFromFile(filePath);
-        library.set(bookId, book);
-    }
-    catch (err)
-    {
-        console.error(`Failed to read audiobook at "${filePath}": ${err}`);
-    }
-
-    return library;
+    return getLibrary();
 }
 
 async function handleGetLibrary(): Promise<Library>
 {
-    return library;
+    return getLibrary();
 }
 
 async function handleGetProgress(bookId: string): Promise<Progress | null>
@@ -117,7 +107,7 @@ app.whenReady().then(() =>
         ipcMain.handle(channel, (_event, ...args: unknown[]) => handler(...args));
     }
 
-    handleScheme(library);
+    handleScheme();
 
     createWindow();
 });

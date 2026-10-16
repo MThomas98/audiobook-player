@@ -6,7 +6,7 @@ Built with Electron, React and TypeScript, partly as a project to learn those to
 
 ## Status
 
-Early development. You can add folders or individual files to the library, see each book's cover and chapters, and play a book.
+Early development. You can add folders or individual files to the library, see each book's cover and chapters, and play a book (including seeking).
 
 Planned:
 - A proper player: chapter navigation, skip back and forward, playback speed
@@ -33,6 +33,7 @@ Other scripts:
 | `npm run build` | Compiles main and preload with `tsc`, and the page with Vite, into `dist/` |
 | `npm run lint` | Checks the code with ESLint |
 | `npm run format` | Fixes the style issues ESLint can fix |
+| `npm test` | Compiles and runs the unit tests in `test/` |
 | `npm run test-media` | Generates test audiobooks into `test-media/` (needs [ffmpeg](https://ffmpeg.org/) on your `PATH`). Add `-- --long` for a 10-hour book |
 
 If you run Electron from a VS Code terminal, note that VS Code sets `ELECTRON_RUN_AS_NODE=1`, which stops Electron from starting as an app. `npm run dev-start` removes it for you; before `npm start`, clear it yourself (in PowerShell: `Remove-Item Env:ELECTRON_RUN_AS_NODE`).
@@ -45,10 +46,11 @@ src/
   preload/   Exposes a small, typed API to the page
   page/      React user interface
   shared/    Types and pure logic used by both sides
+test/        Unit tests
 scripts/     Development launcher and test-media generator
 docs/        Project plan
 ```
 
-The user interface has no access to Node or the file system. It asks the main process for things through a typed API (`src/shared/api.ts`) and refers to books by ID, never by file path. Audio is streamed to the page through a custom `morgiobooks://` URL scheme, which only serves books that are already in the library.
+The user interface has no access to Node or the file system. It asks the main process for things through a typed API (`src/shared/api.ts`) and refers to books by ID, never by file path. Audio and cover art reach the page through a custom `morgiobooks://` URL scheme, which only serves books that are already in the library. Audio is streamed with support for HTTP range requests, so seeking jumps straight to the right part of the file.
 
 The milestones and design decisions are in [docs/plan.md](docs/plan.md).
