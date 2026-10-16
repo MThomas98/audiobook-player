@@ -23,16 +23,17 @@ A Windows desktop audiobook player (Electron + React + TypeScript), built as a l
 - `src/page/`: browser environment, `src/page/tsconfig.json` (`module: preserve`, DOM lib, `noEmit`), built by Vite to `dist/page/`.
 - `src/shared/` is type-checked under **both** configs. It must only contain plain types and pure logic (no Node or DOM APIs).
 - `src/shared/api.ts` holds the `Api` contract. The preload implements it (`const api: Api`), and `src/page/global.d.ts` types `window.api`.
-- IPC channel names are the `Api` method names. Main registers a `handlers` object typed `{ [C in keyof Api]: (...args: unknown[]) => ReturnType<Api[C]> }` (a missing or wrongly typed handler is a compile error); the preload builds `api` with a typed `invoker(channel)`. Handler entries validate arguments with `expect*` functions from `src/main/typeCheckers.ts`, then call typed `handleX` functions.
+- IPC channel names are the `Api` method names. Main registers a `handlers` object typed `{ [C in keyof Api]: (...args: unknown[]) => ReturnType<Api[C]> }` (a missing or wrongly typed handler is a compile error); the preload builds `api` with a typed `invoker(channel)`. Handler entries validate arguments with `expect*` functions from `src/main/checkers.ts`, then call typed `handleX` functions.
 - `src/main/library.ts`: finding and parsing audiobooks (`music-metadata`). It imports only Node modules, not Electron, so it stays testable outside the app.
 - Main owns the library (`Map<BookID, Book>`); the page only displays what IPC calls return. A `BookID` is the file's normalized absolute path (`resolve` + lowercase + `/`).
+- Audio doesn't go through IPC. The page sets `<audio src>` to `audiobookUrl(bookId)` (`src/shared/urls.ts`, `morgiobooks://audiobook/<id>`). `src/main/protocol.ts` registers the scheme as privileged (before `app` is ready), looks the ID up in the library (unknown → 404) and streams the file with `net.fetch`, forwarding request headers so Range requests (seeking) work.
 - `src/shared/types.ts`: domain types (`Seconds`, `Chapter`, `Book`, `BookID`, `Library`, `Progress`). `src/shared/book.ts`: pure book logic (`getChapterAt`).
 - `vite.config.mts` has a small CSP plugin: `default-src 'self'; img-src 'self' data:` in builds (data: for cover art); inline scripts/styles allowed only on the dev server.
 
 ## Conventions
 - Style is enforced by ESLint Stylistic: Allman braces, 4-space indent, double quotes, semicolons, binary operators at the end of a line.
 - Import order (`import-x/order`): external and Node imports, blank line, project imports, blank line, `import type` lines.
-- File names: camelCase for modules (`typeCheckers.ts`), PascalCase for React components (`App.tsx`).
+- File names: camelCase for modules (e.g. `bookList.ts`), PascalCase for React components (`App.tsx`).
 - `interface` for object shapes, `type` for unions and aliases. String-literal unions, not `enum`.
 - Named exports for project code. Use `import type` for type-only imports.
 - IPC (structured clone, and `contextBridge`) may carry `Map`: the `Library` type is a `Map` (decision by the user; verified working). No classes (the prototype and methods are lost, but TS still thinks they exist) or functions across IPC.
