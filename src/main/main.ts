@@ -96,7 +96,7 @@ function createWindow(): void
     else
     {
         window.loadFile(join(__dirname, "..", "page", "index.html"))
-            .catch(err => console.error(`Failed to load index.html: ${err}`)); ;
+            .catch(err => console.error(`Failed to load index.html: ${err}`));
     }
 }
 
@@ -112,4 +112,4 @@ app.whenReady().then(() =>
     handleScheme();
 
     createWindow();
-}).catch(err => console.error(`Error occured when loading app: ${err}`));
+}).catch(err => console.error(`Error occurred when loading app: ${err}`));

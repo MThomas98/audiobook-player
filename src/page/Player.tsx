@@ -19,11 +19,6 @@ export function Player({ bookId }: PlayerProps)
 
     function handleSeekOffset(offset: Seconds)
     {
-        if (!player)
-        {
-            return;
-        }
-
         player.seek(player.position + offset);
     }
 
@@ -43,7 +38,7 @@ export function Player({ bookId }: PlayerProps)
                 step="any"
                 value={player.position}
                 disabled={!Number.isFinite(player.duration)}
-                onChange={pos => player.seek(pos.currentTarget.valueAsNumber)}
+                onChange={e => player.seek(e.currentTarget.valueAsNumber)}
             />
         </div>
     );

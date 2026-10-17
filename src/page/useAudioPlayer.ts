@@ -17,8 +17,6 @@ export function useAudioPlayer()
             return;
         }
 
-        console.log(`togglePlay(): isPlaying=${isPlaying}`);
-
         if (isPlaying)
         {
             audio.pause();
@@ -37,6 +35,8 @@ export function useAudioPlayer()
         {
             return;
         }
+
+        seconds = Math.min(Math.max(seconds, 0), audio.duration);
 
         audio.currentTime = seconds;
     }
