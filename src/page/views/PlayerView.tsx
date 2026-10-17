@@ -36,7 +36,7 @@ export function PlayerView({ book, player, onBack }: PlayerViewProps)
                 <BookCover book={book} />
                 <p className="current-chapter">{currentChapter?.title ?? "Unknown Chapter"}</p>
             </div>
-            <PlayerControls player={player} />
+            <PlayerControls player={player} chapters={book?.chapters ?? []} />
             <br />
             <button onClick={() => chapterSelectDialogRef.current?.showModal()}>Chapters</button>
             <dialog ref={chapterSelectDialogRef} className="chapter-dialog" closedby="any">

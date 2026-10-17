@@ -37,7 +37,7 @@ export function LibraryView({ library, currentBook, player, onLibraryChange, onS
                 currentBook !== undefined && (
                     <>
                         <b>{currentBook.title}</b>
-                        <PlayerControls player={player} />
+                        <PlayerControls player={player} chapters={currentBook?.chapters ?? []} />
                         <br />
                         <button onClick={onGoToPlayer}>Back to Player</button>
                         <br />
