@@ -1,5 +1,5 @@
 import { coverUrl } from "../../shared/urls";
-import defaultCover from "../assets/logo-no-text.png";
+import defaultCover from "../assets/default-cover.png";
 
 import type { Book } from "../../shared/types";
 

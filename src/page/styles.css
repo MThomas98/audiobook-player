@@ -61,17 +61,32 @@ main, .library-view, .player-view, .player-view-info, .player-controls
 .player-view-info
 {
     gap: 4px;
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+.player-view-info hgroup
+{
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
 }
 
 .player-view-info h1,
-.player-view-info h2
+.player-view-info p
 {
     margin: 0;
 }
 
-.player-view-info h2
+.player-view-info .author
 {
-    font-weight: normal;
+    font-size: 1.5em;
+    opacity: 0.7;
+}
+
+.player-view-info .current-chapter
+{
+    margin-top: 8px;
     opacity: 0.7;
 }
 
@@ -92,4 +107,52 @@ main, .library-view, .player-view, .player-view-info, .player-controls
 .progress-bar
 {
     align-self: stretch;
+}
+
+.chapter-dialog
+{
+    background-color: #0a1730;
+    color: #e6ebf5;
+    border: 1px solid #2a3a5c;
+    border-radius: 8px;
+    max-height: 80vh;
+}
+
+.chapter-dialog[open]
+{
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.chapter-dialog::backdrop
+{
+    background-color: rgb(0 0 0 / 60%);
+}
+
+.chapter-select
+{
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    overflow-y: auto;
+}
+
+.chapter-select button
+{
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.chapter-time
+{
+    font-variant-numeric: tabular-nums;
+    opacity: 0.7;
+}
+
+.chapter-dialog-close
+{
+    align-self: center;
 }

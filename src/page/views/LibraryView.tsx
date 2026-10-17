@@ -32,7 +32,7 @@ export function LibraryView({ library, currentBook, player, onLibraryChange, onS
 
     return (
         <div className="library-view">
-            <img src={logo} width={256} />
+            <img src={logo} width={256} alt="" />
             {
                 currentBook !== undefined && (
                     <>
