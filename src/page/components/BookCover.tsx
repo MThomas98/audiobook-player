@@ -5,12 +5,12 @@ import type { Book } from "../../shared/types";
 
 export interface BookCoverProps
 {
-    book: Book;
+    book: Book | undefined;
 }
 
 export function BookCover({ book }: BookCoverProps)
 {
     return (
-        <img className="book-cover" src={book.hasCover ? coverUrl(book.id) : defaultCover} alt="" />
+        <img className="book-cover" src={book !== undefined ? (book.hasCover ? coverUrl(book.id) : defaultCover) : defaultCover} alt="" />
     );
 }

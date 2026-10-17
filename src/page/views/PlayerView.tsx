@@ -16,13 +16,12 @@ export function PlayerView({ book, player, onBack }: PlayerViewProps)
 {
     return (
         <div className="player-view">
-            {book !== undefined && (
-                <div className="player-view-info">
-                    <h1>{book.title}</h1>
-                    <h2>{book.author ?? "Unknown Author" }</h2>
-                    <BookCover book={book} />
-                </div>
-            )}
+            <div className="player-view-info">
+                <h1>{book !== undefined ? book.title : "Unknown Book"}</h1>
+                <h2>{book !== undefined ? (book.author ?? "Unknown Author") : "Unknown Author" }</h2>
+                <BookCover book={book} />
+            </div>
+            <br />
             <PlayerControls player={player} />
             <br />
             <button onClick={onBack}>Back to Library</button>
