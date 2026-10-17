@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
-import { getChapterAt, getChapterIndexAt } from "../src/shared/book";
+import { getChapterAt, getChapterIndexAt, getChapterProgress } from "../src/shared/chapterUtils";
 
 import type { Chapter, Seconds } from "../src/shared/types";
 
@@ -64,5 +64,53 @@ describe("getChapterAt", () =>
     it("returns undefined for a book without chapters", () =>
     {
         assert.equal(getChapterAt([], 0), undefined);
+    });
+});
+
+// Progress through chapter "Two" (60-150, 90 seconds long).
+const progressCases: [Seconds, number][] = [
+    // Before the chapter: nothing played
+    [0, 0],
+    [59.999, 0],
+
+    // Inside the chapter
+    [60, 0],
+    [105, 0.5],
+    [87, 0.3],
+
+    // At or after its end: fully played
+    [150, 1],
+    [1000, 1],
+];
+
+describe("getChapterProgress", () =>
+{
+    for (const [position, expected] of progressCases)
+    {
+        it(`is ${expected} at ${position}`, () =>
+        {
+            assert.equal(getChapterProgress(chapters[1], position), expected);
+        });
+    }
+
+    // Two chapters starting at the same time leave one with no length.
+    describe("zero-length chapter", () =>
+    {
+        const empty: Chapter = { title: "Empty", start: 60, end: 60 };
+
+        it("is 0 before it", () =>
+        {
+            assert.equal(getChapterProgress(empty, 59), 0);
+        });
+
+        it("is 1 at its start", () =>
+        {
+            assert.equal(getChapterProgress(empty, 60), 1);
+        });
+
+        it("is 1 after it", () =>
+        {
+            assert.equal(getChapterProgress(empty, 61), 1);
+        });
     });
 });

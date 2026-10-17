@@ -1,4 +1,4 @@
-import { getChapterIndexAt } from "../../shared/book";
+import { getChapterIndexAt } from "../../shared/chapterUtils";
 
 import type { AudioPlayer } from "../useAudioPlayer";
 import type { Seconds, Chapter } from "../../shared/types";

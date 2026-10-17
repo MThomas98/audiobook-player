@@ -4,7 +4,7 @@ import { PlayerControls } from "../components/PlayerControls";
 import { BookCover } from "../components/BookCover";
 import logo from "../assets/logo-small.png";
 import { ChapterSelect } from "../components/ChapterSelect";
-import { getChapterAt } from "../../shared/book";
+import { getChapterAt } from "../../shared/chapterUtils";
 
 import type { Book } from "../../shared/types";
 import type { AudioPlayer } from "../useAudioPlayer";
@@ -42,6 +42,7 @@ export function PlayerView({ book, player, onBack }: PlayerViewProps)
             <dialog ref={chapterSelectDialogRef} className="chapter-dialog" closedby="any">
                 <ChapterSelect
                     chapters={chapters}
+                    position={player.position}
                     onSelectChapter={(chapter) =>
                     {
                         player.seek(chapter.start);

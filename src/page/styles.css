@@ -1,3 +1,9 @@
+:root
+{
+    --chapter-done: #1d3a6e;
+    --chapter-todo: #0a1730;
+}
+
 body
 {
     background-color: #0a1730;
@@ -144,6 +150,13 @@ main, .library-view, .player-view, .player-view-info, .player-controls
     display: flex;
     justify-content: space-between;
     gap: 16px;
+    background: linear-gradient(
+        to right,
+        var(--chapter-done) var(--fill, 0%),
+        var(--chapter-todo) var(--fill, 0%)
+    );
+    color: white;
+    border: 1px solid #4a6a9e;
 }
 
 .chapter-time
