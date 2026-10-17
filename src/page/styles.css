@@ -1,3 +1,24 @@
+body
+{
+    background-color: #0a1730;
+    color: #e6ebf5;
+    font-family: system-ui, "Segoe UI", sans-serif;
+}
+
+main
+{
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 16px;
+}
+
+main, .library-view, .player-view, .player-view-info, .player-controls
+{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
 .library-grid
 {
     display: grid;
@@ -10,4 +31,22 @@
     width: 100%;
     aspect-ratio: 1;
     object-fit: cover;
+}
+
+.player-view .book-cover
+{
+    width: 256px;
+    aspect-ratio: 1;
+    object-fit: cover;
+}
+
+.button-row
+{
+    display: flex;
+    gap: 8px;
+}
+
+.progress-bar
+{
+    align-self: stretch;
 }

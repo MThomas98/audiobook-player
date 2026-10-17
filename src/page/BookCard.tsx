@@ -1,5 +1,4 @@
-import { coverUrl } from "../shared/urls";
-import defaultCover from "./assets/logo-no-text.png";
+import { BookCover } from "./BookCover";
 
 import type { BookID, Book } from "../shared/types";
 
@@ -17,7 +16,7 @@ export function BookCard({ book, onSelect }: BookCardProps)
             <br />
             {book.author ?? "Unknown Author"}
             <br />
-            <img className="book-cover" src={book.hasCover ? coverUrl(book.id) : defaultCover} alt="" />
+            <BookCover book={book} />
         </button>
     );
 }

@@ -22,6 +22,9 @@ A Windows desktop audiobook player (Electron + React + TypeScript), built as a l
 ## Layout and environments
 - `src/main/`, `src/preload/` and `src/shared/`: Node environment, root `tsconfig.json`, compiled by `tsc` to `dist/` as CommonJS.
 - `src/page/`: browser environment, `src/page/tsconfig.json` (`module: preserve`, DOM lib, `noEmit`), built by Vite to `dist/page/`.
+  - `App.tsx` owns the page's state: `view` (`"library" | "player"`), `library`, `currentBookId`, and the `<audio>` element + `useAudioPlayer()`. They live in `App` so playback survives switching views (an unmounted component loses its state and its `<audio>` pauses). Views and components get the `AudioPlayer` object and data as props, and report changes through `onX` callbacks.
+  - `views/` holds the full-page views (`LibraryView`, `PlayerView`); other components sit directly in `src/page/`.
+  - Don't read DOM state (e.g. `audio.src`) during render: derive from React state instead.
 - `src/shared/` is type-checked under **both** configs. It must only contain plain types and pure logic (no Node or DOM APIs).
 - `src/shared/api.ts` holds the `Api` contract. The preload implements it (`const api: Api`), and `src/page/global.d.ts` types `window.api`.
 - IPC channel names are the `Api` method names. Main registers a `handlers` object typed `{ [C in keyof Api]: (...args: unknown[]) => ReturnType<Api[C]> }` (a missing or wrongly typed handler is a compile error); the preload builds `api` with a typed `invoker(channel)`. Handler entries validate arguments with `expect*` functions from `src/main/checkers.ts`, then call typed `handleX` functions.

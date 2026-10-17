@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 
 import type { Seconds } from "../shared/types";
 
+export type AudioPlayer = ReturnType<typeof useAudioPlayer>;
+
 export function useAudioPlayer()
 {
     const audioRef = useRef<HTMLAudioElement>(null);

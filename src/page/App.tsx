@@ -1,36 +1,66 @@
 import { useState } from "react";
 
-import logo from "./assets/logo.png";
-import { LibraryGrid } from "./LibraryGrid";
-import { Player } from "./Player";
+import { LibraryView } from "./views/LibraryView";
+import { useAudioPlayer } from "./useAudioPlayer";
+import { audiobookUrl } from "../shared/urls";
+import { PlayerView } from "./views/PlayerView";
 
 import type { BookID, Library } from "../shared/types";
 
+type View = "library" | "player";
+
 export function App()
 {
+    const [view, setView] = useState<View>("library");
+
     const [library, setLibrary] = useState<Library>(new Map());
     const [currentBookId, setCurrentBookId] = useState<BookID | null>(null);
 
-    async function handleChooseFolder()
+    const currentBook = currentBookId === null ? undefined : library.get(currentBookId);
+
+    const player = useAudioPlayer();
+
+    function handleSelectBook(bookId: BookID)
     {
-        const newLibrary = await window.api.addFolderToLibrary();
-        setLibrary(newLibrary);
+        setCurrentBookId(bookId);
+        setView("player");
     }
 
-    async function handleChooseFile()
+    function getView()
     {
-        const newLibrary = await window.api.addFileToLibrary();
-        setLibrary(newLibrary);
+        switch (view)
+        {
+            case "library":
+                return (
+                    <LibraryView
+                        library={library}
+                        currentBook={currentBook}
+                        player={player}
+                        onLibraryChange={setLibrary}
+                        onSelectBook={handleSelectBook}
+                        onGoToPlayer={() => setView("player")}
+                    />
+                );
+            case "player":
+                return (
+                    <PlayerView
+                        book={currentBook}
+                        player={player}
+                        onBack={() => setView("library")}
+                    />
+                );
+            default:
+            {
+                const unreachable: never = view;
+                throw new Error(`Unknown view: ${unreachable}`);
+            }
+        }
     }
 
     return (
         <main>
-            <img src={logo} width={256} />
-            <br />
-            <button onClick={handleChooseFolder}>Add folder to library</button>
-            <button onClick={handleChooseFile}>Add file to library</button>
-            <Player bookId={currentBookId} />
-            <LibraryGrid library={library} onSelect={setCurrentBookId} />
+            <audio autoPlay ref={player.audioRef} src={currentBookId === null ? undefined : audiobookUrl(currentBookId)} />
+            {getView()}
         </main>
     );
 }

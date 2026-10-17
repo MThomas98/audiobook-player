@@ -37,7 +37,11 @@ src/
   shared/types.ts      Domain types: Seconds, Chapter, Book, BookID, Library, Progress
   shared/book.ts       Pure book logic: getChapterAt
   shared/urls.ts       Scheme name and URL builders: audiobookUrl, coverUrl
-  page/                React app: index.html, main.tsx, App.tsx, global.d.ts, tsconfig.json
+  page/                React app: index.html, main.tsx, global.d.ts, tsconfig.json, styles.css
+  page/App.tsx         Root: view state, library, current book, the <audio> element + useAudioPlayer
+  page/useAudioPlayer.ts  Hook wrapping <audio>: isPlaying/position/duration state, togglePlay, seek
+  page/views/          LibraryView (add buttons, mini player bar, grid), PlayerView (now playing)
+  page/*.tsx           Components: LibraryGrid, BookCard, BookCover, PlayerControls
 test/                  Unit tests (node:test), own tsconfig, compiled to dist-test/
 scripts/dev.mjs        Dev launcher
 scripts/make-test-media.mjs  Test audiobook generator (ffmpeg)
@@ -73,9 +77,12 @@ Note: setting `"lib": ["es2025"]` in the root tsconfig breaks `electron.d.ts` (i
 - **Tests:** first unit tests (`test/range.test.ts`, `node:test`), see milestone 8.
 *Concepts:* HTTP request/response, Range/206/416, streams and backpressure (Node vs web streams), discriminated unions, regex `exec`, definite assignment, `node:test`.
 
-**5. Library and player UI — NEXT.** `LibraryGrid` → `BookCard`, `PlayerBar`, `ChapterList`. `useAudioPlayer` hook wraps `<audio>`: play/pause, seek, ±30s, speed 0.75–2×, chapter navigation (seeking within the one file; no track switching).
-- **Player page** (issue #20): the player gets its own "now playing" view (cover, title/author, controls, chapter list) instead of sitting above the library grid. Choosing a book opens it; a back button returns to the library. One window, with the view switched in `App` state (`type View = "library" | "player"`); no router yet. Playback must continue across views, so `<audio>` and `useAudioPlayer` stay mounted in `App` and the player state is passed down. On the library view, a small bar shows the current book with play/pause and a way back to the player page.
-*Concepts:* typed props, `useRef<HTMLAudioElement>`, typed event handlers, discriminated unions for player state, `key` in lists, lifting state up (keeping state alive across views).
+**5. Library and player UI — IN PROGRESS.** `LibraryGrid` → `BookCard`, `PlayerControls`, `ChapterList`. `useAudioPlayer` hook wraps `<audio>`: play/pause, seek, ±10s/±30s, speed 0.75–2×, chapter navigation (seeking within the one file; no track switching).
+- **Done:** library grid of `BookCard`s (#4); `useAudioPlayer` with play/pause, seek and skip, `PlayerControls` (progress slider + buttons).
+- **Player page — done** (#20): one window, view switched in `App` state (`type View = "library" | "player"`, rendered by a `switch` with a `never` exhaustiveness check); no router. Choosing a book opens `PlayerView` (cover, title/author, controls, Back button). Playback continues across views because `<audio>` and `useAudioPlayer()` live in `App`, which never unmounts; the `AudioPlayer` object (`ReturnType<typeof useAudioPlayer>`) is passed down as a prop. `App` derives `currentBook` from `currentBookId` + the library and passes it to both views; `LibraryView` shows a mini bar (title, controls, "Back to Player") while a book is loaded. `library` state also lives in `App` (both views need it). `BookCover` holds the `hasCover ? coverUrl : default logo` fallback; its size is set by CSS per context (`.book-card .book-cover`, `.player-view .book-cover`).
+- **Remaining:** chapter list and previous/next chapter (#6, handle `getChapterAt` returning `undefined` at the end); playback speed (`playbackRate` + `defaultPlaybackRate`, `ratechange`); time display with a pure `formatTime` (test it).
+- Layout: column flexboxes with `align-items: center`. Gotchas met: flex items shrink to content width (use `align-self: stretch`), `<hr>` has UA `margin-inline: auto` which beats `align-self`, inline elements become rows in a flex column (wrap them in a `.button-row`).
+*Concepts:* typed props, `useRef<HTMLAudioElement>`, typed event handlers, function-typed props (`onX`), lifting state up (keeping state alive across views), conditional rendering, `typeof` in type positions, `never` exhaustiveness, `useEffect` vs code in the render body, `key` in lists.
 
 **6. Remember the library and resume where you left off** (`main/libraryStore.ts`, `main/progressStore.ts`).
 - **Library:** save the *sources* the user added (folder paths and individual file paths) as JSON in userData, not the scanned books. On start, load them and rescan to rebuild the `Map<BookID, Book>`; the page fetches it with `getLibrary` on mount. Missing folders/files are skipped and reported, not deleted from the list (the drive may just be unplugged). Add a way to remove a source. Caching scanned books (to skip rescanning) is an optional later optimization; covers would go in separate files, not in the JSON.

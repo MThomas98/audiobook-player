@@ -98,8 +98,11 @@ async function handleAudiobookRequest(url: URL, request: Request, library: Libra
                 headers: { "Content-Range": `bytes */${size}` },
             });
         case "partial":
-        {
             return streamFile(book.filePath, size, rangeResult.start, rangeResult.end);
+        default:
+        {
+            const unreachable: never = rangeResult;
+            throw new Error(`Unknown range result: ${JSON.stringify(unreachable)}`);
         }
     }
 }

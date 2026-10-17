@@ -18,6 +18,7 @@ export default defineConfig(
     {
         rules: {
             "@stylistic/operator-linebreak": ["error", "after"],
+            "@stylistic/linebreak-style": ["error", "unix"],
             "@typescript-eslint/consistent-type-imports": "error",
         },
     },
