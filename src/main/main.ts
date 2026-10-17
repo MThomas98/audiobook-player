@@ -90,11 +90,13 @@ function createWindow(): void
     const devServerUrl = process.env.DEV_SERVER_URL;
     if (devServerUrl)
     {
-        window.loadURL(devServerUrl);
+        window.loadURL(devServerUrl)
+            .catch(err => console.error(`Failed to load URL ${devServerUrl}: ${err}`));
     }
     else
     {
-        window.loadFile(join(__dirname, "..", "page", "index.html"));
+        window.loadFile(join(__dirname, "..", "page", "index.html"))
+            .catch(err => console.error(`Failed to load index.html: ${err}`)); ;
     }
 }
 
@@ -110,4 +112,4 @@ app.whenReady().then(() =>
     handleScheme();
 
     createWindow();
-});
+}).catch(err => console.error(`Error occured when loading app: ${err}`));

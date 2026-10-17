@@ -22,6 +22,22 @@ export default defineConfig(
         },
     },
     {
+        files: ["src/**/*.{ts,tsx}", "test/**/*.ts"],
+        languageOptions: {
+            parserOptions: {
+                projectService: true,
+                tsconfigRootDir: import.meta.dirname,
+            },
+        },
+        rules: {
+            "@typescript-eslint/no-floating-promises": ["error", {
+                allowForKnownSafeCalls: [
+                    { from: "package", package: "node:test", name: ["describe", "it"] },
+                ],
+            }],
+        },
+    },
+    {
         plugins: { "import-x": importX },
         rules: {
             "import-x/order": ["error", {

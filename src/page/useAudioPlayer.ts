@@ -9,27 +9,30 @@ export function useAudioPlayer()
     const [position, setPosition] = useState<Seconds>(0);
     const [duration, setDuration] = useState<Seconds>(NaN);
 
-    const audio = audioRef.current;
-
     function togglePlay()
     {
+        const audio = audioRef.current;
         if (!audio)
         {
             return;
         }
 
+        console.log(`togglePlay(): isPlaying=${isPlaying}`);
+
         if (isPlaying)
         {
-            audio.play();
+            audio.pause();
         }
         else
         {
-            audio.pause();
+            audio.play()
+                .catch(err => console.error(`Failed to play audio: ${err}`));
         }
     }
 
     function seek(seconds: Seconds)
     {
+        const audio = audioRef.current;
         if (!audio || !Number.isFinite(seconds))
         {
             return;
@@ -40,33 +43,23 @@ export function useAudioPlayer()
 
     useEffect(() =>
     {
+        const audio = audioRef.current;
+
         if (!audio)
         {
             return;
         }
 
-        function handlePlay()
-        {
-            setIsPlaying(true);
-        }
+        const handlePlay = () => setIsPlaying(true);
         audio.addEventListener("play", handlePlay);
 
-        function handlePause()
-        {
-            setIsPlaying(false);
-        }
+        const handlePause = () => setIsPlaying(false);
         audio.addEventListener("pause", handlePause);
 
-        function handleTimeUpdate()
-        {
-            setPosition(audio ? audio.currentTime : 0);
-        }
+        const handleTimeUpdate = () => setPosition(audio.currentTime);
         audio.addEventListener("timeupdate", handleTimeUpdate);
 
-        function handleDurationChange()
-        {
-            setDuration(audio ? audio.duration : NaN);
-        }
+        const handleDurationChange = () => setDuration(audio.duration);
         audio.addEventListener("durationchange", handleDurationChange);
 
         return () =>

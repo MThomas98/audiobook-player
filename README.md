@@ -9,9 +9,9 @@ Built with Electron, React and TypeScript, partly as a project to learn those to
 Early development. You can add folders or individual files to the library, see each book's cover and chapters, and play a book (including seeking).
 
 Planned:
-- A proper player: chapter navigation, skip back and forward, playback speed
+- A proper player on its own page: chapter navigation, skip back and forward, playback speed
 - Remembering the library and resuming where you left off
-- Media keys and the Windows media overlay, a sleep timer, keyboard shortcuts
+- Media keys and the Windows media overlay, a sleep timer, keyboard shortcuts, a settings menu
 - A Windows installer
 
 Supported audio: AAC and MP3 in an MP4 file, which covers most audiobooks. Files using ALAC or AC-3 audio, and unreadable files, are skipped.

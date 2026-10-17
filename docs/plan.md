@@ -74,7 +74,8 @@ Note: setting `"lib": ["es2025"]` in the root tsconfig breaks `electron.d.ts` (i
 *Concepts:* HTTP request/response, Range/206/416, streams and backpressure (Node vs web streams), discriminated unions, regex `exec`, definite assignment, `node:test`.
 
 **5. Library and player UI — NEXT.** `LibraryGrid` → `BookCard`, `PlayerBar`, `ChapterList`. `useAudioPlayer` hook wraps `<audio>`: play/pause, seek, ±30s, speed 0.75–2×, chapter navigation (seeking within the one file; no track switching).
-*Concepts:* typed props, `useRef<HTMLAudioElement>`, typed event handlers, discriminated unions for player state, `key` in lists.
+- **Player page** (issue #20): the player gets its own "now playing" view (cover, title/author, controls, chapter list) instead of sitting above the library grid. Choosing a book opens it; a back button returns to the library. One window, with the view switched in `App` state (`type View = "library" | "player"`); no router yet. Playback must continue across views, so `<audio>` and `useAudioPlayer` stay mounted in `App` and the player state is passed down. On the library view, a small bar shows the current book with play/pause and a way back to the player page.
+*Concepts:* typed props, `useRef<HTMLAudioElement>`, typed event handlers, discriminated unions for player state, `key` in lists, lifting state up (keeping state alive across views).
 
 **6. Remember the library and resume where you left off** (`main/libraryStore.ts`, `main/progressStore.ts`).
 - **Library:** save the *sources* the user added (folder paths and individual file paths) as JSON in userData, not the scanned books. On start, load them and rescan to rebuild the `Map<BookID, Book>`; the page fetches it with `getLibrary` on mount. Missing folders/files are skipped and reported, not deleted from the list (the drive may just be unplugged). Add a way to remove a source. Caching scanned books (to skip rescanning) is an optional later optimization; covers would go in separate files, not in the JSON.
@@ -82,7 +83,7 @@ Note: setting `"lib": ["es2025"]` in the root tsconfig breaks `electron.d.ts` (i
 - Write files safely (write to a temp file, then rename) so a crash mid-write can't corrupt them; validate loaded JSON as `unknown` like IPC input.
 *Concepts:* `Record`, `Partial`/`Pick`, validating untrusted JSON.
 
-**7. Polish.** `navigator.mediaSession` (media keys, Windows media overlay), sleep timer, keyboard shortcuts. Library filtering: a search box that narrows the grid by title/author (case-insensitive, done in the page over the books it already has; no IPC). Optional hardening: block all network requests from the page in main (second layer alongside the CSP).
+**7. Polish.** `navigator.mediaSession` (media keys, Windows media overlay), sleep timer, keyboard shortcuts. Library filtering: a search box that narrows the grid by title/author (case-insensitive, done in the page over the books it already has; no IPC). Settings menu (issue #21): **which settings it has is still to be decided** when this milestone starts. Settings are saved by main as JSON in userData (same safe writes and validation as milestone 6) and changed through the typed `Api`. Optional hardening: block all network requests from the page in main (second layer alongside the CSP).
 
 **8. Tests and packaging.** Vitest for pure functions (`getChapterAt`, `parseRange`, time formatting). `electron-builder --win` installer (no auto-updater).
 - Unit tests started early (milestone 4) with Node's built-in runner (`node:test` + `node:assert`) to see the bare mechanism, starting with `parseRange`. In this milestone, switch to Vitest (it also covers the page) and port or remove the raw `node:test` tests.
