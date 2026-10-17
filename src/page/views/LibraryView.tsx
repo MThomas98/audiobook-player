@@ -1,6 +1,6 @@
 import logo from "../assets/logo-short.png";
-import { LibraryGrid } from "../LibraryGrid";
-import { PlayerControls } from "../PlayerControls";
+import { LibraryGrid } from "../components/LibraryGrid";
+import { PlayerControls } from "../components/PlayerControls";
 
 import type { AudioPlayer } from "../useAudioPlayer";
 import type { Book, BookID, Library } from "../../shared/types";

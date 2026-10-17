@@ -1,5 +1,5 @@
-import { PlayerControls } from "../PlayerControls";
-import { BookCover } from "../BookCover";
+import { PlayerControls } from "../components/PlayerControls";
+import { BookCover } from "../components/BookCover";
 
 import type { Book } from "../../shared/types";
 import type { AudioPlayer } from "../useAudioPlayer";

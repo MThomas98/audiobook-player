@@ -1,6 +1,6 @@
 import { BookCover } from "./BookCover";
 
-import type { BookID, Book } from "../shared/types";
+import type { BookID, Book } from "../../shared/types";
 
 interface BookCardProps
 {

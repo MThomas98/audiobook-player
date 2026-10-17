@@ -1,5 +1,5 @@
-import type { AudioPlayer } from "./useAudioPlayer";
-import type { Seconds } from "../shared/types";
+import type { AudioPlayer } from "../useAudioPlayer";
+import type { Seconds } from "../../shared/types";
 
 export interface PlayerControlsProps
 {

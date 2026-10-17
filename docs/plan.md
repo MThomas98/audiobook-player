@@ -41,7 +41,7 @@ src/
   page/App.tsx         Root: view state, library, current book, the <audio> element + useAudioPlayer
   page/useAudioPlayer.ts  Hook wrapping <audio>: isPlaying/position/duration state, togglePlay, seek
   page/views/          LibraryView (add buttons, mini player bar, grid), PlayerView (now playing)
-  page/*.tsx           Components: LibraryGrid, BookCard, BookCover, PlayerControls
+  page/components/     Reusable components: LibraryGrid, BookCard, BookCover, PlayerControls
 test/                  Unit tests (node:test), own tsconfig, compiled to dist-test/
 scripts/dev.mjs        Dev launcher
 scripts/make-test-media.mjs  Test audiobook generator (ffmpeg)

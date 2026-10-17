@@ -1,7 +1,7 @@
-import { coverUrl } from "../shared/urls";
-import defaultCover from "./assets/logo-no-text.png";
+import { coverUrl } from "../../shared/urls";
+import defaultCover from "../assets/logo-no-text.png";
 
-import type { Book } from "../shared/types";
+import type { Book } from "../../shared/types";
 
 export interface BookCoverProps
 {

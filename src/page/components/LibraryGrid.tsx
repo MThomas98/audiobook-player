@@ -1,6 +1,6 @@
 import { BookCard } from "./BookCard";
 
-import type { BookID, Library } from "../shared/types";
+import type { BookID, Library } from "../../shared/types";
 
 interface LibraryGridProps
 {

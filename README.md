@@ -6,10 +6,10 @@ Built with Electron, React and TypeScript, partly as a project to learn those to
 
 ## Status
 
-Early development. You can add folders or individual files to the library, see each book's cover and chapters, and play a book (including seeking).
+Early development. You can add folders or individual files to the library, browse it as a grid of covers, and open a book on its own player page: play/pause, seeking, and skipping back and forward. Playback carries on while you browse the library, with small controls for the current book at the top.
 
 Planned:
-- A proper player on its own page: chapter navigation, skip back and forward, playback speed
+- On the player page: a chapter list with chapter navigation, playback speed, and elapsed/total time
 - Remembering the library and resuming where you left off
 - Media keys and the Windows media overlay, a sleep timer, keyboard shortcuts, a settings menu
 - A Windows installer
