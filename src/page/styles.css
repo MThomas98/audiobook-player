@@ -33,6 +33,24 @@ main, .library-view, .player-view, .player-view-info, .player-controls
     align-self: stretch;
 }
 
+.book-card
+{
+    min-width: 0;
+}
+
+.book-card-text
+{
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.book-card-title
+{
+    font-weight: bold;
+}
+
 .book-card .book-cover
 {
     width: 100%;

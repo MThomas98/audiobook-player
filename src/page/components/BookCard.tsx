@@ -10,12 +10,12 @@ interface BookCardProps
 
 export function BookCard({ book, onSelect }: BookCardProps)
 {
+    const author = book.author ?? "Unknown Author";
+
     return (
         <button className="book-card" onClick={() => onSelect(book.id)}>
-            <b>{book.title}</b>
-            <br />
-            {book.author ?? "Unknown Author"}
-            <br />
+            <span className="book-card-text book-card-title" title={book.title}>{book.title}</span>
+            <span className="book-card-text" title={author}>{author}</span>
             <BookCover book={book} />
         </button>
     );
