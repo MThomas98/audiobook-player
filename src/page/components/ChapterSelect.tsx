@@ -1,5 +1,5 @@
 import { formatTime } from "../../shared/time";
-import { getChapterProgress } from "../../shared/chapterUtils";
+import { getChapterProgress } from "../../shared/chapter";
 
 import type { Chapter, Seconds } from "../../shared/types";
 

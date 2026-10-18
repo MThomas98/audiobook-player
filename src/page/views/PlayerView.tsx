@@ -4,7 +4,7 @@ import { PlayerControls } from "../components/PlayerControls";
 import { BookCover } from "../components/BookCover";
 import logo from "../assets/logo-small.png";
 import { ChapterSelect } from "../components/ChapterSelect";
-import { getChapterAt } from "../../shared/chapterUtils";
+import { getCurrentChapter } from "../../shared/chapter";
 
 import type { Book } from "../../shared/types";
 import type { AudioPlayer } from "../useAudioPlayer";
@@ -21,9 +21,8 @@ export function PlayerView({ book, player, onBack }: PlayerViewProps)
 {
     const chapterSelectDialogRef = useRef<HTMLDialogElement>(null);
 
-    // getChapterAt returns undefined at exactly the end of the book: show the last chapter there.
     const chapters = book?.chapters ?? [];
-    const currentChapter = getChapterAt(chapters, player.position) ?? chapters.at(-1);
+    const currentChapter = getCurrentChapter(chapters, player.position);
 
     return (
         <div className="player-view">

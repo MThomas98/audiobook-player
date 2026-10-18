@@ -1,7 +1,7 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
 
-import { getChapterAt, getChapterIndexAt, getChapterProgress } from "../src/shared/chapterUtils";
+import { getChapterAt, getChapterIndexAt, getChapterPosition, getChapterProgress, getCurrentChapter } from "../src/shared/chapter";
 
 import type { Chapter, Seconds } from "../src/shared/types";
 
@@ -67,6 +67,34 @@ describe("getChapterAt", () =>
     });
 });
 
+describe("getCurrentChapter", () =>
+{
+    it("finds the chapter inside the book", () =>
+    {
+        assert.equal(getCurrentChapter(chapters, 100), chapters[1]);
+    });
+
+    it("gives the last chapter at exactly the end of the book", () =>
+    {
+        assert.equal(getCurrentChapter(chapters, 300), chapters[2]);
+    });
+
+    it("gives the last chapter after the end of the book", () =>
+    {
+        assert.equal(getCurrentChapter(chapters, 1000), chapters[2]);
+    });
+
+    it("returns undefined before the first chapter", () =>
+    {
+        assert.equal(getCurrentChapter(chapters, -1), undefined);
+    });
+
+    it("returns undefined for a book without chapters", () =>
+    {
+        assert.equal(getCurrentChapter([], 0), undefined);
+    });
+});
+
 // Progress through chapter "Two" (60-150, 90 seconds long).
 const progressCases: [Seconds, number][] = [
     // Before the chapter: nothing played
@@ -112,5 +140,33 @@ describe("getChapterProgress", () =>
         {
             assert.equal(getChapterProgress(empty, 61), 1);
         });
+    });
+});
+
+// Time into chapter "Two" (60-150, 90 seconds long).
+const positionCases: [Seconds, Seconds][] = [
+    // Inside the chapter
+    [60, 0],
+    [87, 27],
+    [149.5, 89.5],
+
+    // At or after its end: clamped to the chapter's length
+    [150, 90],
+    [1000, 90],
+];
+
+describe("getChapterPosition", () =>
+{
+    for (const [position, expected] of positionCases)
+    {
+        it(`is ${expected} at ${position}`, () =>
+        {
+            assert.equal(getChapterPosition(chapters[1], position), expected);
+        });
+    }
+
+    it("is 0 for a zero-length chapter", () =>
+    {
+        assert.equal(getChapterPosition({ title: "Empty", start: 60, end: 60 }, 60), 0);
     });
 });

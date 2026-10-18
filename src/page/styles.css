@@ -30,6 +30,21 @@ main, .library-view, .player-view, .player-view-info, .player-controls
     align-self: stretch;
 }
 
+.now-playing
+{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 16px;
+}
+
+.now-playing h2,
+.now-playing p
+{
+    margin: 0;
+}
+
 .library-grid
 {
     display: grid;
