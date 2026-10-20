@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { LibraryView } from "./views/LibraryView";
 import { useAudioPlayer } from "./useAudioPlayer";
@@ -15,6 +15,13 @@ export function App()
 
     const [library, setLibrary] = useState<Library>(new Map());
     const [currentBookId, setCurrentBookId] = useState<BookID | null>(null);
+
+    useEffect(() =>
+    {
+        window.api.getLibrary()
+            .then(setLibrary)
+            .catch(err => console.error(`Failed to get saved library: ${err}`));
+    }, []);
 
     const currentBook = currentBookId === null ? undefined : library.get(currentBookId);
 

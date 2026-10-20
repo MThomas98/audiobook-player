@@ -157,5 +157,65 @@ describe("jsonStore", () =>
             await mkdir(subDir);
             await assert.rejects(loadJson(subDir, expectPoint), { code: "EISDIR" });
         });
+
+        it("moves a file with invalid JSON aside to <path>.corrupt", async () =>
+        {
+            const subDir = join(dir, "corruptJson");
+            await mkdir(subDir);
+            const path = join(subDir, "data.json");
+            await writeFile(path, "{ not json");
+
+            await assert.rejects(loadJson(path, expectPoint), SyntaxError);
+            assert.deepEqual(await readdir(subDir), ["data.json.corrupt"]);
+            assert.equal(await readFile(`${path}.corrupt`, "utf8"), "{ not json");
+        });
+
+        it("moves a file decode rejects aside to <path>.corrupt", async () =>
+        {
+            const subDir = join(dir, "corruptShape");
+            await mkdir(subDir);
+            const path = join(subDir, "data.json");
+            const contents = JSON.stringify({ x: "1", y: 2 });
+            await writeFile(path, contents);
+
+            await assert.rejects(loadJson(path, expectPoint), { message: "Not a Point" });
+            assert.deepEqual(await readdir(subDir), ["data.json.corrupt"]);
+            assert.equal(await readFile(`${path}.corrupt`, "utf8"), contents);
+        });
+
+        it("keeps the corrupt file when a later save starts a fresh one", async () =>
+        {
+            const subDir = join(dir, "freshAfterCorrupt");
+            await mkdir(subDir);
+            const path = join(subDir, "data.json");
+            await writeFile(path, "{ not json");
+
+            await assert.rejects(loadJson(path, expectPoint), SyntaxError);
+            await saveJson(path, { x: 1, y: 2 });
+
+            assert.deepEqual(await loadJson(path, expectPoint), { x: 1, y: 2 });
+            assert.deepEqual((await readdir(subDir)).sort(), ["data.json", "data.json.corrupt"]);
+            assert.equal(await readFile(`${path}.corrupt`, "utf8"), "{ not json");
+        });
+
+        it("doesn't move a file it couldn't read", async () =>
+        {
+            const subDir = join(dir, "unreadable");
+            await mkdir(subDir);
+            // A folder named like the file: reading it fails with EISDIR, so its contents are never parsed.
+            await mkdir(join(subDir, "data.json"));
+
+            await assert.rejects(loadJson(join(subDir, "data.json"), expectPoint), { code: "EISDIR" });
+            assert.deepEqual(await readdir(subDir), ["data.json"]);
+        });
+
+        it("creates no .corrupt file for a missing file", async () =>
+        {
+            const subDir = join(dir, "missingNoCorrupt");
+            await mkdir(subDir);
+
+            assert.equal(await loadJson(join(subDir, "data.json"), expectPoint), null);
+            assert.deepEqual(await readdir(subDir), []);
+        });
     });
 });

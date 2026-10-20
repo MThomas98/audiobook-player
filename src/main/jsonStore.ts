@@ -38,6 +38,14 @@ export async function loadJson<T>(path: string, decode: (value: unknown) => T): 
         throw err;
     }
 
-    const value: unknown = JSON.parse(contents);
-    return decode(value);
+    try
+    {
+        return decode(JSON.parse(contents));
+    }
+    catch (err)
+    {
+        await rename(path, `${path}.corrupt`)
+            .catch(renameErr => console.error(`Failed to move corrupt file ${path}: ${renameErr}`));
+        throw err;
+    }
 }

@@ -66,15 +66,24 @@ export async function createWindow(): Promise<void>
         console.error(`Failed to read window params, falling back to default: ${err}`);
     }
 
+    const devServerUrl = process.env.ELECTRON_RENDERER_URL;
+
     const window = new BrowserWindow({
         width: windowParams.width,
         height: windowParams.height,
         x: windowParams.x,
         y: windowParams.y,
+        // In dev, electron-vite restarts the app on every main change: show it without stealing focus from the editor
+        show: !devServerUrl,
         webPreferences: {
             preload: join(__dirname, "..", "preload", "preload.js"),
         },
     });
+
+    if (devServerUrl)
+    {
+        window.once("ready-to-show", () => window.showInactive());
+    }
 
     window.on("resized", () =>
     {
@@ -85,7 +94,6 @@ export async function createWindow(): Promise<void>
         saveBounds(window).catch(err => console.error(`Failed to save moved window params: ${err}`));
     });
 
-    const devServerUrl = process.env.ELECTRON_RENDERER_URL;
     if (devServerUrl)
     {
         window.loadURL(devServerUrl)

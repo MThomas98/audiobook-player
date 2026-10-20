@@ -1,6 +1,9 @@
-import { readdir } from "node:fs/promises";
+import { readdir, stat } from "node:fs/promises";
 import { basename, extname, join, resolve } from "node:path";
 import { type IPicture, parseFile, selectCover, type IChapter } from "music-metadata";
+
+import { loadJson, saveJson } from "./jsonStore";
+import { expectStringArray } from "./checkers";
 
 import type { Book, BookID, Chapter, Library, Seconds } from "../shared/types";
 
@@ -10,6 +13,7 @@ const PLAYABLE_CODECS: ReadonlySet<string> = new Set(["MPEG-4/AAC", "MPEG-1 laye
 
 const covers = new Map<BookID, IPicture>();
 const library: Library = new Map();
+const sources = new Set<string>();
 
 function createBookID(filePath: string): BookID
 {
@@ -54,7 +58,7 @@ export async function findAudiobookFiles(rootFolder: string): Promise<string[]>
         .map(entry => join(entry.parentPath, entry.name));
 }
 
-export async function addFileToLibrary(filePath: string): Promise<Library>
+export async function addFileToLibrary(filePath: string, addSource: boolean = true): Promise<Library>
 {
     const metadata = await parseFile(filePath, { includeChapters: true });
 
@@ -87,23 +91,34 @@ export async function addFileToLibrary(filePath: string): Promise<Library>
     };
     book.chapters = createChapters(metadata.format.chapters, book.duration, book.title);
 
+    // If we've already included this file (i.e. through a folder), don't bother saving it
+    if (addSource && !library.has(bookId))
+    {
+        sources.add(book.filePath);
+    }
+
     library.set(bookId, book);
     return library;
 }
 
-export async function addFolderToLibrary(rootFolder: string): Promise<Library>
+export async function addFolderToLibrary(rootFolder: string, addSource: boolean = true): Promise<Library>
 {
     const files = await findAudiobookFiles(rootFolder);
     for (const file of files)
     {
         try
         {
-            await addFileToLibrary(file);
+            await addFileToLibrary(file, false);
         }
         catch (err)
         {
             console.error(`Failed to read audiobook at "${file}": ${err}`);
         }
+    }
+
+    if (addSource)
+    {
+        sources.add(resolve(rootFolder));
     }
 
     return library;
@@ -117,4 +132,35 @@ export function getLibrary(): Library
 export function getCoverImage(bookId: BookID): IPicture | undefined
 {
     return covers.get(bookId);
+}
+
+export async function saveLibrarySources(path: string): Promise<void>
+{
+    await saveJson(path, [...sources]);
+}
+
+export async function loadLibrarySources(path: string): Promise<void>
+{
+    const sourcesArray = await loadJson(path, expectStringArray) ?? [];
+
+    for (const source of sourcesArray)
+    {
+        sources.add(source);
+        try
+        {
+            const stats = await stat(source);
+            if (stats.isDirectory())
+            {
+                await addFolderToLibrary(source, false);
+            }
+            else if (stats.isFile())
+            {
+                await addFileToLibrary(source, false);
+            }
+        }
+        catch (err)
+        {
+            console.error(`Failed to load ${source} from saved library: ${err}`);
+        }
+    }
 }

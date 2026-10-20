@@ -10,6 +10,16 @@ export function expectString(value: unknown, name: string): string
     return value;
 }
 
+export function expectStringArray(value: unknown): string[]
+{
+    if (!Array.isArray(value) || !value.every(item => typeof item === "string"))
+    {
+        throw new Error("string array is not in the expected format");
+    }
+
+    return value;
+}
+
 export function expectProgress(value: unknown, name: string): Progress
 {
     if (typeof value !== "object" || value === null ||

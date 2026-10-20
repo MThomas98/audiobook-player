@@ -1,12 +1,18 @@
 import { app, dialog, ipcMain } from "electron";
+import { join } from "node:path";
 
 import { expectString, expectProgress } from "./checkers";
-import { addFileToLibrary, addFolderToLibrary, getLibrary } from "./library";
+import { addFileToLibrary, addFolderToLibrary, getLibrary, loadLibrarySources, saveLibrarySources } from "./library";
 import { handleScheme, registerScheme } from "./protocol";
 import { createWindow } from "./window";
 
 import type { Progress, Library } from "../shared/types";
 import type { Api } from "../shared/api";
+
+function librarySavePath(): string
+{
+    return join(app.getPath("userData"), "library.json");
+}
 
 // ==== IPC Handlers ==== ///
 
@@ -26,6 +32,9 @@ async function handleAddFolderToLibrary(): Promise<Library>
         }
     }
 
+    await saveLibrarySources(librarySavePath())
+        .catch(err => console.error(`Failed to save library: ${err}`));
+
     return getLibrary();
 }
 
@@ -44,6 +53,9 @@ async function handleAddFileToLibrary(): Promise<Library>
             console.error(`Failed to read audiobook at "${filePath}": ${err}`);
         }
     }
+
+    await saveLibrarySources(librarySavePath())
+        .catch(err => console.error(`Failed to save library: ${err}`));
 
     return getLibrary();
 }
@@ -87,6 +99,15 @@ app.whenReady().then(async () =>
     }
 
     handleScheme();
+
+    try
+    {
+        await loadLibrarySources(librarySavePath());
+    }
+    catch (err)
+    {
+        console.error(`Failed to load library: ${err}`);
+    }
 
     await createWindow();
 }).catch(err => console.error(`Error occurred when loading app: ${err}`));
