@@ -1,9 +1,9 @@
-import { app, BrowserWindow, dialog, ipcMain } from "electron";
-import { join } from "node:path";
+import { app, dialog, ipcMain } from "electron";
 
 import { expectString, expectProgress } from "./checkers";
 import { addFileToLibrary, addFolderToLibrary, getLibrary } from "./library";
 import { handleScheme, registerScheme } from "./protocol";
+import { createWindow } from "./window";
 
 import type { Progress, Library } from "../shared/types";
 import type { Api } from "../shared/api";
@@ -77,32 +77,9 @@ const handlers: Handlers = {
 
 // ======== //
 
-function createWindow(): void
-{
-    const window = new BrowserWindow({
-        width: 600,
-        height: 800,
-        webPreferences: {
-            preload: join(__dirname, "..", "preload", "preload.js"),
-        },
-    });
-
-    const devServerUrl = process.env.ELECTRON_RENDERER_URL;
-    if (devServerUrl)
-    {
-        window.loadURL(devServerUrl)
-            .catch(err => console.error(`Failed to load URL ${devServerUrl}: ${err}`));
-    }
-    else
-    {
-        window.loadFile(join(__dirname, "..", "renderer", "index.html"))
-            .catch(err => console.error(`Failed to load index.html: ${err}`));
-    }
-}
-
 registerScheme();
 
-app.whenReady().then(() =>
+app.whenReady().then(async () =>
 {
     for (const [channel, handler] of Object.entries(handlers))
     {
@@ -111,5 +88,5 @@ app.whenReady().then(() =>
 
     handleScheme();
 
-    createWindow();
+    await createWindow();
 }).catch(err => console.error(`Error occurred when loading app: ${err}`));
