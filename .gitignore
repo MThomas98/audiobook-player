@@ -3,3 +3,4 @@ dist
 .vscode
 test-media
 dist-test
+out

@@ -2,7 +2,7 @@
 
 ## Context
 The user is a C++ engineer who knows JavaScript well and is new to TypeScript, Electron and the npm/Node toolchain. They are building a Windows desktop audiobook player, **Morgiobooks**, to learn how a real TypeScript application is structured.
-**How we work:** the user builds the project themselves, one step at a time. Claude explains each step (what to do, why, and what each line means) and the user writes the files and runs the commands. Claude only writes files when the user explicitly asks. A generated electron-vite scaffold was tried first and thrown away because it hid too much; the setup was then rebuilt by hand.
+**How we work:** the user builds the project themselves, one step at a time. Claude explains each step (what to do, why, and what each line means) and the user writes the files and runs the commands. Claude only writes files when the user explicitly asks. A generated electron-vite scaffold was tried first and thrown away because it hid too much; the setup was then rebuilt by hand. Once the user understood the hand-built build, it was switched to electron-vite (configured by hand, not from a template) to get automatic main/preload restarts.
 
 ## Scope decisions
 - **MP4 files with chapter metadata only** (`.mp4`, `.m4a`, `.m4b` are the same container; treat them identically). **One file = one book.** Folders of MP3s are not planned (they may come later as a second kind of book).
@@ -13,10 +13,10 @@ The user is a C++ engineer who knows JavaScript well and is new to TypeScript, E
 |---|---|---|
 | Runtime | Electron 44 (contains Node 24.21) | `@types/node` pinned to 24 to match Electron's Node |
 | Language | TypeScript **6.0** (`~6.0`), strict | TS 7 was tried, but typescript-eslint only supports TS < 6.1 |
-| Main + preload build | `tsc` (root `tsconfig.json`), CommonJS output to `dist/` | `module: nodenext`, `noEmitOnError`, `sourceMap` |
-| Page build | Vite 8 + `@vitejs/plugin-react`, output to `dist/page/` | Own `src/page/tsconfig.json` (`module: preserve`, DOM lib, `noEmit`) |
+| Build | electron-vite 6 (Vite 8 / Rolldown) for main, preload and page; output to `out/` | Main and preload bundled to CommonJS (`dependencies` stay external); page with `@vitejs/plugin-react`. Config: `electron.vite.config.mts` |
+| Type-checking | `tsc --noEmit`: root `tsconfig.json` (`module: nodenext`) and `src/renderer/tsconfig.json` (`module: preserve`, DOM lib) | Separate step (`npm run typecheck`), run by `build` and `start`: the bundler only strips types |
 | UI | React 19, `useState` to start | Component library (e.g. Mantine) optional later |
-| Dev loop | `scripts/dev.mjs` starts Vite's dev server, then Electron with `DEV_SERVER_URL` | Main/preload changes need a manual restart; electron-vite is an option later |
+| Dev loop | `electron-vite dev --watch` | Page hot-reloads; a main change restarts Electron; a preload change reloads the window. Replaced the hand-written `scripts/dev.mjs` |
 | Lint + format | ESLint 10 + typescript-eslint + **ESLint Stylistic** (no Prettier) | Allman braces, 4-space indent, double quotes, semicolons, binary operators at the end of the line (`operator-linebreak: after`) |
 | Metadata | `music-metadata` 12.x in main, with `includeChapters: true` | Reads QuickTime chapter tracks and Nero `chpl` lists. **ESM-only package; main is CommonJS**: check `require(esm)` works at the start of milestone 3, otherwise switch main to ESM or bundle |
 | Audio | HTML `<audio>` in the page | Verified with `canPlayType` in Electron 44: AAC, Opus and FLAC in MP4 play; ALAC, AC-3 and E-AC-3 don't. Main uses an allowlist on `metadata.format.codec` (`"MPEG-4/AAC"`, `"MPEG-1 layer 3"`). music-metadata doesn't name Opus/FLAC-in-MP4, so those are rejected too (rare for audiobooks). Recheck when upgrading Electron |
@@ -39,19 +39,19 @@ src/
   shared/chapter.ts    Pure chapter logic: getChapterAt, getChapterIndexAt, getCurrentChapter, getChapterProgress, getChapterPosition
   shared/time.ts       Pure time formatting: formatTime (h:mm:ss / m:ss)
   shared/urls.ts       Scheme name and URL builders: audiobookUrl, coverUrl
-  page/                React app: index.html, main.tsx, global.d.ts, tsconfig.json, styles.css
-  page/App.tsx         Root: view state, library, current book, the <audio> element + useAudioPlayer
-  page/useAudioPlayer.ts  Hook wrapping <audio>: isPlaying/position/duration state, togglePlay, seek
-  page/views/          LibraryView (now-playing section, add buttons, grid), PlayerView (now playing)
-  page/components/     Reusable components: LibraryGrid, BookCard, BookCover, PlayerControls, ChapterSelect
+  renderer/            React app: index.html, main.tsx, global.d.ts, tsconfig.json, styles.css
+  renderer/App.tsx     Root: view state, library, current book, the <audio> element + useAudioPlayer
+  renderer/useAudioPlayer.ts  Hook wrapping <audio>: isPlaying/position/duration state, togglePlay, seek
+  renderer/views/      LibraryView (now-playing section, add buttons, grid), PlayerView (now playing)
+  renderer/components/ Reusable components: LibraryGrid, BookCard, BookCover, PlayerControls, ChapterSelect
 test/                  Unit tests (node:test: range, time, chapter, jsonStore), own tsconfig, compiled to dist-test/
-scripts/dev.mjs        Dev launcher
 scripts/make-test-media.mjs  Test audiobook generator (ffmpeg)
-vite.config.mts        Vite config incl. a small CSP plugin (strict in builds, allows inline in dev)
+electron.vite.config.mts  electron-vite config: main/preload defaults; page with React and a small CSP plugin (strict in builds, allows inline in dev)
 ```
 
 ## Milestones
 **0. Tooling — DONE.** Hand-built: npm, TypeScript, Electron, preload/IPC folder picker, Vite + React, ESLint Stylistic, VS Code launch configs ("Run App" and "Run App (dev)").
+- **Switched to electron-vite (2026-10-20, during milestone 6).** Replaced `tsc` emitting main/preload, the separate `vite.config.mts` and `scripts/dev.mjs`. `src/page/` was renamed to `src/renderer/` (electron-vite's default, matching Electron's process names), so the config only overrides what it must. `tsc` is now check-only. Output moved from `dist/` to `out/`, leaving `dist/` for electron-builder's installers.
 
 **1. Domain types — DONE.** `src/shared/types.ts`:
 ```ts
@@ -100,7 +100,7 @@ Note: setting `"lib": ["es2025"]` in the root tsconfig breaks `electron.d.ts` (i
 
 **8. Tests and packaging.** Vitest for pure functions (`getChapterAt`, `parseRange`, time formatting). `electron-builder --win` installer (no auto-updater).
 - Unit tests started early (milestone 4) with Node's built-in runner (`node:test` + `node:assert`) to see the bare mechanism, starting with `parseRange`. In this milestone, switch to Vitest (it also covers the page) and port or remove the raw `node:test` tests.
-- The CommonJS setup (`"type": "commonjs"`) blocks Node's type stripping (why tests are compiled with `tsc` first) and Vite's future native config loader (warning on `vite.config.mts` importing `src/shared/urls.ts`). Decide here whether to move to ESM or keep CommonJS.
+- The CommonJS setup (`"type": "commonjs"`) blocks Node's type stripping (why tests are compiled with `tsc` first). (The old `vite.config.mts` also got a warning about Vite's future native config loader; electron-vite's build doesn't show it.) Decide here whether to move to ESM or keep CommonJS.
 
 ## Side quest (optional, after milestone 5 or so): hand-written MP4 reader
 Replace `music-metadata` with our own parser, as a learning exercise. Estimate: 3–5 days part-time, ~500–800 lines, for typical audiobook files.
@@ -129,7 +129,7 @@ Transcribe a book's audio locally and show the current sentence while it plays. 
 - *Concepts:* child processes / `utilityProcess` / worker threads, streaming large data, IPC progress events (main → page push, not just `invoke`), native addons vs CLI tools, WebVTT.
 
 ## Verification (each milestone)
-- `npx tsc --noEmit`, `npx tsc --noEmit -p src/page`, and `npm run lint` pass.
+- `npm run typecheck`, `npm run lint` and `npm test` pass.
 - Run with F5 ("Run App (dev)") or `npm run dev-start`; check the terminal (main) and DevTools (page) for errors.
 - From milestone 3: test against real MP4 audiobooks, with and without chapters.
 - From milestone 6: close and reopen; it resumes at the saved position.

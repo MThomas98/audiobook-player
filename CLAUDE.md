@@ -10,25 +10,26 @@ A Windows desktop audiobook player (Electron + React + TypeScript), built as a l
 - C++ comparisons help (headers ↔ `.d.ts`, `std::optional` ↔ `T | null`), but say where they break down.
 
 ## Commands
-- `npm run dev-start`: development (Vite dev server + Electron). Page changes hot-reload; main/preload changes need a restart.
-- `npm start`: build everything, then run the built app.
-- `npm run build`: `tsc` (main/preload/shared) then `vite build` (page).
+- `npm run dev-start`: development (`electron-vite dev --watch`: Vite dev server + Electron). Page changes hot-reload; a main change rebuilds main and restarts Electron; a preload change rebuilds it and reloads the window. Doesn't type-check.
+- `npm start`: type-check, then `electron-vite preview` (builds, then runs the built app).
+- `npm run build`: type-check, then `electron-vite build` into `out/` (gitignored).
 - `npm run lint` / `npm run format` (`eslint --fix`; there is no Prettier).
-- Type-check: `npx tsc --noEmit` and `npx tsc --noEmit -p src/page`.
+- `npm run typecheck`: `tsc --noEmit` (root config) and `tsc --noEmit -p src/renderer`. electron-vite only strips types, so type errors don't stop `electron-vite build`/`dev` by themselves.
 - `npm test`: compiles `test/` (and the `src/` files it imports) with `tsc -p test` into `dist-test/` (gitignored), then runs `node --test` on the compiled `*.test.js`. Tests use `node:test` + `node:assert/strict`; this is temporary, milestone 8 switches to Vitest.
-- VS Code F5: "Run App" (built) or "Run App (dev)" (Vite dev server, debugger attached to main). `.vscode/` is gitignored. React dev warnings (e.g. missing `key`) only appear in the dev variant.
+- VS Code F5: "Run App" (type-check, `electron-vite build --sourcemap`, then Electron) or "Run App (dev)" (`electron-vite dev --watch --sourcemap` under the debugger, which auto-attaches to the Electron process it spawns). Source maps are off unless `--sourcemap` is passed. `.vscode/` is gitignored. React dev warnings (e.g. missing `key`) only appear in the dev variant.
 - `npm run test-media [-- --long]`: generates test audiobooks into `test-media/` (gitignored) with ffmpeg (`scripts/make-test-media.mjs`): playable books with/without chapters, tags and cover, a nested folder, ALAC/AC-3 files and broken files that must be skipped. `--long` adds a 10-hour book.
 
 ## Layout and environments
-- `src/main/`, `src/preload/` and `src/shared/`: Node environment, root `tsconfig.json`, compiled by `tsc` to `dist/` as CommonJS.
-- `src/page/`: browser environment, `src/page/tsconfig.json` (`module: preserve`, DOM lib, `noEmit`), built by Vite to `dist/page/`.
+- Built by **electron-vite** (`electron.vite.config.mts`), which runs Vite (Rolldown) once each for main, preload and the page. Output in `out/` (emptied on each build): `out/main/main.js`, `out/preload/preload.js` and `out/renderer/`. `package.json` `"main"` is `out/main/main.js`. `out/` rather than `dist/`, because electron-builder (milestone 8) writes installers to `dist/` by default.
+- `src/main/`, `src/preload/` and `src/shared/`: Node environment, root `tsconfig.json` (check-only, `noEmit`, `module: nodenext`). Main and preload are each bundled into one CommonJS file: project files are inlined; Electron, Node built-ins and `dependencies` (e.g. `music-metadata`) stay as `require`s. `__dirname` is `out/main` (or `out/preload`).
+- `src/renderer/` (the page): browser environment, `src/renderer/tsconfig.json` (`module: preserve`, DOM lib, `noEmit`), built to `out/renderer/`. In dev, main loads `process.env.ELECTRON_RENDERER_URL` (set by `electron-vite dev`), otherwise `out/renderer/index.html`.
   - `App.tsx` owns the page's state: `view` (`"library" | "player"`), `library`, `currentBookId`, and the `<audio>` element + `useAudioPlayer()`. They live in `App` so playback survives switching views (an unmounted component loses its state and its `<audio>` pauses). Views and components get the `AudioPlayer` object and data as props, and report changes through `onX` callbacks.
-  - `views/` holds the full-page views (`LibraryView`, `PlayerView`); reusable components go in `components/`. `App.tsx`, `main.tsx` and hooks stay at the top of `src/page/`.
+  - `views/` holds the full-page views (`LibraryView`, `PlayerView`); reusable components go in `components/`. `App.tsx`, `main.tsx` and hooks stay at the top of `src/renderer/`.
   - Don't read DOM state (e.g. `audio.src`) during render: derive from React state instead.
   - To pass a value from React to CSS, set a custom property in `style` (e.g. `style={{ "--fill": "40%" }}`) and read it with `var(--fill, fallback)`. `global.d.ts` augments React's `CSSProperties` to accept `--*` keys, so no cast is needed. React sets styles through the CSSOM, which the CSP should allow (not yet verified in the built app; dev allows inline styles anyway).
   - Overlays use a native `<dialog>` opened with `showModal()` via a ref (from event handlers only), with `closedby="any"` for Esc/backdrop dismissal. E.g. the chapter select in `PlayerView`.
 - `src/shared/` is type-checked under **both** configs. It must only contain plain types and pure logic (no Node or DOM APIs).
-- `src/shared/api.ts` holds the `Api` contract. The preload implements it (`const api: Api`), and `src/page/global.d.ts` types `window.api`.
+- `src/shared/api.ts` holds the `Api` contract. The preload implements it (`const api: Api`), and `src/renderer/global.d.ts` types `window.api`.
 - IPC channel names are the `Api` method names. Main registers a `handlers` object typed `{ [C in keyof Api]: (...args: unknown[]) => ReturnType<Api[C]> }` (a missing or wrongly typed handler is a compile error); the preload builds `api` with a typed `invoker(channel)`. Handler entries validate arguments with `expect*` functions from `src/main/checkers.ts`, then call typed `handleX` functions.
 - `src/main/library.ts`: finding and parsing audiobooks (`music-metadata`), and main's book state: the library (`Map<BookID, Book>`, via `getLibrary`) and a main-only `Map<BookID, IPicture>` of covers (via `getCoverImage`). It imports only Node modules, not Electron, so it stays testable outside the app.
 - `src/main/jsonStore.ts`: `saveJson` (snapshot, write to `<path>.tmp` then `rename`, writes to one path serialised by a promise chain) and `loadJson(path, decode)` (`null` if the file is missing, throws on invalid JSON or a shape `decode` rejects). No Electron imports: callers build paths from `app.getPath("userData")`. Every saved JSON file goes through it.
@@ -37,8 +38,8 @@ A Windows desktop audiobook player (Electron + React + TypeScript), built as a l
   - Audio: `stat` for the size, `parseRange` (`src/main/range.ts`, pure) on the `Range` header, then `createReadStream` + `Readable.toWeb` as the body: 200 (whole file) / 206 (`Content-Range`) / 416 (`bytes */size`), always with `Accept-Ranges: bytes`. `stat` failure → 404 (`ENOENT`) or 500.
   - Covers: served from memory with their stored `format` as `Content-Type`. Only `image/jpeg`/`image/png` covers are stored (allowlist in `library.ts`).
 - `src/shared/types.ts`: domain types (`Seconds`, `Chapter`, `Book`, `BookID`, `Library`, `Progress`). `src/shared/chapter.ts`: pure chapter logic (`getChapterAt`, `getChapterIndexAt`, `getCurrentChapter`, `getChapterProgress`, `getChapterPosition`). `getCurrentChapter` is what the UI uses: like `getChapterAt`, but at or after the end of the book it gives the last chapter. `src/shared/time.ts`: `formatTime` (`h:mm:ss` / `m:ss`).
-- `vite.config.mts` has a small CSP plugin: `default-src 'self'; img-src morgiobooks:; media-src morgiobooks:` (scheme name imported from `src/shared/urls.ts`); inline scripts/styles allowed only on the dev server.
-- `test/`: unit tests (`*.test.ts`) with their own `test/tsconfig.json` (extends the root, `rootDir: ".."`, `outDir: "../dist-test"`), so tests are type-checked by their build and never end up in `dist/`.
+- `electron.vite.config.mts`: `main: {}` and `preload: {}` use the defaults (electron-vite finds `src/main/main.ts` and `src/preload/preload.ts` by name; a section that's left out isn't built). `renderer` (default root `src/renderer`) has React and a small CSP plugin: `default-src 'self'; img-src morgiobooks:; media-src morgiobooks:` (scheme name imported from `src/shared/urls.ts`); inline scripts/styles allowed only on the dev server. The config also deletes `ELECTRON_RUN_AS_NODE` (see Gotchas).
+- `test/`: unit tests (`*.test.ts`) with their own `test/tsconfig.json` (extends the root but emits: `noEmit: false`, `rootDir: ".."`, `outDir: "../dist-test"`), so tests are type-checked by their build and never end up in `out/`.
 
 ## Conventions
 - Style is enforced by ESLint Stylistic: Allman braces, 4-space indent, double quotes, semicolons, binary operators at the end of a line.
@@ -59,18 +60,21 @@ A Windows desktop audiobook player (Electron + React + TypeScript), built as a l
 - Values read from book files are untrusted, including metadata that ends up in response headers (e.g. a cover's `format` → `Content-Type`): allowlist them.
 
 ## Gotchas
-- **VS Code sets `ELECTRON_RUN_AS_NODE=1`** in its terminals, which makes Electron run as plain Node (`require('electron')` is undefined). `dev.mjs` and the launch configs remove it; for a manual run use `Remove-Item Env:ELECTRON_RUN_AS_NODE`.
+- **VS Code sets `ELECTRON_RUN_AS_NODE=1`** in its terminals, which makes Electron run as plain Node (`require("electron")` then finds the npm package, which exports the path to `electron.exe`, so `app` is `undefined`). electron-vite spawns Electron with its own environment, so `electron.vite.config.mts` deletes the variable from `process.env` (covers `dev-start`, `start` and F5 dev); the "Run App" launch config sets it to `null`. For a manual `electron .`, use `Remove-Item Env:ELECTRON_RUN_AS_NODE`.
+- **electron-vite's `--watch` restart kills the Electron process** (`ps.kill()`, which on Windows terminates it): no `close`/`before-quit` handlers run. Save state when it changes (e.g. on `moved`/`resized`), not only on close.
+- **Two copies of the app share `userData`.** A second copy (e.g. `npm run dev-start` still running when starting F5) logs `Unable to move the cache: Access is denied` (Chromium's cache is locked) and would overwrite the first copy's JSON files. A single-instance lock (`app.requestSingleInstanceLock()`) is not added yet.
 - **TypeScript is pinned to `~6.0`**, because typescript-eslint doesn't support TS 7 yet.
 - **`@types/node` must match Electron's Node major version** (Electron 44 → Node 24). Recheck it when upgrading Electron.
-- `tsc` never deletes stale output files in `dist/`; delete them by hand after moving or renaming files.
-- Electron's types describe one `electron` module containing both main and renderer APIs, so `tsc` won't flag e.g. `ipcRenderer` used in main. In plain Node scripts (`dev.mjs`), `require("electron")` is the path to `electron.exe`, not the API.
+- `tsc` never deletes stale output files in `dist-test/`; delete them by hand after moving or renaming files. (electron-vite empties `out/` itself.)
+- **The root tsconfig must keep `noEmit`.** Without it (and with no `outDir`), a plain `npx tsc` writes `.js` files next to the `.ts` sources, and Vite then resolves imports like `./library.js` to those stale files instead of the `.ts`.
+- Electron's types describe one `electron` module containing both main and renderer APIs, so `tsc` won't flag e.g. `ipcRenderer` used in main. In plain Node scripts, `require("electron")` is the path to `electron.exe`, not the API.
 - `music-metadata` is ESM-only and main is CommonJS; it loads fine through Node 24's `require(esm)` (verified). It is a runtime `dependency`, not a `devDependency`.
 - **Codec support (verified with `canPlayType` in Electron 44):** AAC, Opus and FLAC in MP4 play; ALAC, AC-3 and E-AC-3 don't. `music-metadata`'s `format.codec` only names AAC/MP3/ALAC/AC-3 (joined with `+` across tracks; unknown codecs are omitted), so Opus/FLAC-in-MP4 are rejected by the allowlist.
 - **Case-only renames on Windows:** git ignores them by default. Use two `git mv` steps (`app.tsx` → `tmp.tsx` → `App.tsx`), or imports break on case-sensitive systems.
 - Setting `"lib": ["es2025"]` in the root tsconfig breaks `electron.d.ts` (it references DOM types). Use `skipLibCheck` if DOM types should ever be kept out of main.
-- **Typed lint rules** (`no-floating-promises`) use `projectService`, so `eslint.config.mjs` applies them only to `src/**` and `test/**` (files in a tsconfig); `.mjs` scripts and `vite.config.mts` aren't. `node:test`'s `describe`/`it` are allowlisted (the runner awaits them). Handle promises with `await`, `.catch(...)` or `void`.
-- ESLint has no Node globals configured for `.mjs` scripts: import `process`, `console`, `Buffer` from `node:` modules explicitly.
+- **Typed lint rules** (`no-floating-promises`) use `projectService`, so `eslint.config.mjs` applies them only to `src/**` and `test/**` (files in a tsconfig); `.mjs` scripts and `electron.vite.config.mts` aren't. Build output (`out/`, `dist/`, `dist-test/`) is ignored. `node:test`'s `describe`/`it` are allowlisted (the runner awaits them). Handle promises with `await`, `.catch(...)` or `void`.
+- ESLint has no Node globals configured for `.mjs` scripts or `electron.vite.config.mts`: import `process`, `console`, `Buffer` from `node:` modules explicitly.
 - **`net.fetch` on a `file:` URL ignores `Range`** (always 200 + whole file, no `Accept-Ranges`), so `<audio>` couldn't seek. That's why `protocol.ts` answers Range requests by hand.
-- **Node can't run this project's `.ts` files directly** (type stripping): the package is `"type": "commonjs"`, and stripping keeps `import`/`export`. Hence tests are compiled with `tsc` first. Vite warns for the same reason (its future `configLoader: 'native'` can't load `vite.config.mts` importing `src/shared/urls.ts`); harmless for now, revisit with the Vitest switch in milestone 8.
+- **Node can't run this project's `.ts` files directly** (type stripping): the package is `"type": "commonjs"`, and stripping keeps `import`/`export`. Hence tests are compiled with `tsc` first; revisit with the Vitest switch in milestone 8. (The old `vite.config.mts` got a warning about Vite's future native config loader for the same reason; `electron-vite build` doesn't print it.)
 - **Styling a `<dialog>`:** put `display: flex` (or any `display`) on `dialog[open]`, not on the dialog itself, or it overrides the UA's `display: none` and the closed dialog stays visible.
 - `Uint8Array` is generic since TS 5.7: `music-metadata` gives `Uint8Array<ArrayBufferLike>`, but a `Response` body needs `Uint8Array<ArrayBuffer>`. Cast or copy (`new Uint8Array(x)`). The error message names an unrelated `BodyInit` union member (e.g. `URLSearchParams`).

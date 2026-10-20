@@ -87,7 +87,7 @@ function createWindow(): void
         },
     });
 
-    const devServerUrl = process.env.DEV_SERVER_URL;
+    const devServerUrl = process.env.ELECTRON_RENDERER_URL;
     if (devServerUrl)
     {
         window.loadURL(devServerUrl)
@@ -95,7 +95,7 @@ function createWindow(): void
     }
     else
     {
-        window.loadFile(join(__dirname, "..", "page", "index.html"))
+        window.loadFile(join(__dirname, "..", "renderer", "index.html"))
             .catch(err => console.error(`Failed to load index.html: ${err}`));
     }
 }

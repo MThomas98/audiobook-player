@@ -23,20 +23,21 @@ You need [Node.js](https://nodejs.org/) (which includes npm).
 ```sh
 npm install
 npm start          # build and run the app
-npm run dev-start  # development mode: page changes reload automatically
+npm run dev-start  # development mode: the app reloads or restarts automatically when you save
 ```
 
 Other scripts:
 
 | Command | What it does |
 |---|---|
-| `npm run build` | Compiles main and preload with `tsc`, and the page with Vite, into `dist/` |
+| `npm run build` | Type-checks, then builds main, preload and the page with [electron-vite](https://electron-vite.org/) into `out/` |
+| `npm run typecheck` | Type-checks all the code with `tsc`, without building |
 | `npm run lint` | Checks the code with ESLint |
 | `npm run format` | Fixes the style issues ESLint can fix |
 | `npm test` | Compiles and runs the unit tests in `test/` |
 | `npm run test-media` | Generates test audiobooks into `test-media/` (needs [ffmpeg](https://ffmpeg.org/) on your `PATH`). Add `-- --long` for a 10-hour book |
 
-If you run Electron from a VS Code terminal, note that VS Code sets `ELECTRON_RUN_AS_NODE=1`, which stops Electron from starting as an app. `npm run dev-start` removes it for you; before `npm start`, clear it yourself (in PowerShell: `Remove-Item Env:ELECTRON_RUN_AS_NODE`).
+VS Code sets `ELECTRON_RUN_AS_NODE=1` in its terminals, which stops Electron from starting as an app. `npm start` and `npm run dev-start` remove it for you. If you run `electron .` yourself, clear it first (in PowerShell: `Remove-Item Env:ELECTRON_RUN_AS_NODE`).
 
 ## How it's put together
 
@@ -44,10 +45,10 @@ If you run Electron from a VS Code terminal, note that VS Code sets `ELECTRON_RU
 src/
   main/      Electron main process: library scanning, file dialogs, IPC handlers, audio streaming
   preload/   Exposes a small, typed API to the page
-  page/      React user interface
+  renderer/  React user interface
   shared/    Types and pure logic used by both sides
 test/        Unit tests
-scripts/     Development launcher and test-media generator
+scripts/     Test-media generator
 docs/        Project plan
 ```
 

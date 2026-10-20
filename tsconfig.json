@@ -2,12 +2,9 @@
     "compilerOptions": {
         "target": "es2025",
         "module": "nodenext",
-        "rootDir": "src",
-        "outDir": "dist",
         "strict": true,
-        "noEmitOnError": true,
         "types": ["node"],
-        "sourceMap": true
+        "noEmit": true
     },
     "include": ["src/main", "src/preload", "src/shared"],
 }
