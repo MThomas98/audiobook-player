@@ -26,5 +26,4 @@ export interface Progress
 {
     bookId: string;
     position: Seconds;
-    updatedAt: number;
 }

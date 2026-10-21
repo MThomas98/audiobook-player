@@ -5,8 +5,9 @@ import { expectString, expectProgress } from "./checkers";
 import { addFileToLibrary, addFolderToLibrary, getLibrary, loadLibrarySources, saveLibrarySources } from "./library";
 import { handleScheme, registerScheme } from "./protocol";
 import { createWindow } from "./window";
+import { getProgress, saveProgress } from "./progress";
 
-import type { Progress, Library } from "../shared/types";
+import type { Progress, Library, BookID } from "../shared/types";
 import type { Api } from "../shared/api";
 
 function librarySavePath(): string
@@ -65,15 +66,14 @@ async function handleGetLibrary(): Promise<Library>
     return getLibrary();
 }
 
-async function handleGetProgress(bookId: string): Promise<Progress | null>
+async function handleGetProgress(bookId: BookID): Promise<Progress | undefined>
 {
-    // TODO
-    return null;
+    return getProgress(bookId);
 }
 
 async function handleSaveProgress(progress: Progress): Promise<void>
 {
-    // TODO
+    return saveProgress(progress, "");
 }
 
 type Handlers = { [C in keyof Api]: (...args: unknown[]) => ReturnType<Api[C]> };

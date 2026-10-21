@@ -25,10 +25,15 @@ export function App()
 
     const currentBook = currentBookId === null ? undefined : library.get(currentBookId);
 
-    const player = useAudioPlayer();
+    const player = useAudioPlayer({ bookId: currentBookId });
 
     function handleSelectBook(bookId: BookID)
     {
+        if (player.isPlaying)
+        {
+            player.saveProgress().catch(err => console.error(`Failed to save progress: ${err}`));
+        }
+
         setCurrentBookId(bookId);
         setView("player");
     }
@@ -66,7 +71,7 @@ export function App()
 
     return (
         <main>
-            <audio autoPlay ref={player.audioRef} src={currentBookId === null ? undefined : audiobookUrl(currentBookId)} />
+            <audio ref={player.audioRef} src={currentBookId === null ? undefined : audiobookUrl(currentBookId)} />
             {getView()}
         </main>
     );

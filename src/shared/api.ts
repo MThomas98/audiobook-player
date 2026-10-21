@@ -1,4 +1,4 @@
-import type { Library, Progress } from "./types";
+import type { BookID, Library, Progress } from "./types";
 
 export interface Api
 {
@@ -6,7 +6,6 @@ export interface Api
     addFileToLibrary(): Promise<Library>;
     getLibrary(): Promise<Library>;
 
-    getProgress(bookId: string): Promise<Progress | null>;
+    getProgress(bookId: BookID): Promise<Progress | undefined>;
     saveProgress(progress: Progress): Promise<void>;
-
 }

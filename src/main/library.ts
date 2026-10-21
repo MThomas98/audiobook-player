@@ -164,3 +164,8 @@ export async function loadLibrarySources(path: string): Promise<void>
         }
     }
 }
+
+export function bookExists(bookId: BookID): boolean
+{
+    return library.has(bookId);
+}
