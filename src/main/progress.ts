@@ -23,12 +23,6 @@ export async function loadProgresses(path: string): Promise<void>
 
     for (const progress of progresses)
     {
-        if (!bookExists(progress.bookId))
-        {
-            console.error(`Found progress for book id ${progress.bookId}, but it isn't loaded`);
-            continue;
-        }
-
         savedProgresses.set(progress.bookId, progress);
     }
 }
