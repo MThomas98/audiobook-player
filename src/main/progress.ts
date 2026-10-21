@@ -1,6 +1,6 @@
-// import { saveJson } from "./jsonStore";
-
 import { bookExists } from "./library";
+import { loadJson, saveJson } from "./jsonStore";
+import { expectProgressArray } from "./checkers";
 
 import type { BookID, Progress } from "../shared/types";
 
@@ -10,16 +10,27 @@ export async function saveProgress(progress: Progress, path: string): Promise<vo
 {
     if (!bookExists(progress.bookId))
     {
-        throw new Error(`Unable to save book, unknown id ${progress.bookId}`);
+        throw new Error(`Unable to save progress, unknown book id ${progress.bookId}`);
     }
 
     savedProgresses.set(progress.bookId, progress);
-    // saveJson(path, [...savedProgresses]);
+    await saveJson(path, [...savedProgresses.values()]);
 }
 
 export async function loadProgresses(path: string): Promise<void>
 {
-    // TODO
+    const progresses = await loadJson(path, expectProgressArray) ?? [];
+
+    for (const progress of progresses)
+    {
+        if (!bookExists(progress.bookId))
+        {
+            console.error(`Found progress for book id ${progress.bookId}, but it isn't loaded`);
+            continue;
+        }
+
+        savedProgresses.set(progress.bookId, progress);
+    }
 }
 
 export function getProgress(bookId: BookID): Progress | undefined

@@ -20,6 +20,16 @@ export function expectStringArray(value: unknown): string[]
     return value;
 }
 
+export function expectProgressArray(value: unknown): Progress[]
+{
+    if (!Array.isArray(value))
+    {
+        throw new Error("progress array is not in the expected format");
+    }
+
+    return value.map(item => expectProgress(item, "saved progress"));
+}
+
 export function expectProgress(value: unknown, name: string): Progress
 {
     if (typeof value !== "object" || value === null ||

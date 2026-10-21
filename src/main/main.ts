@@ -5,7 +5,7 @@ import { expectString, expectProgress } from "./checkers";
 import { addFileToLibrary, addFolderToLibrary, getLibrary, loadLibrarySources, saveLibrarySources } from "./library";
 import { handleScheme, registerScheme } from "./protocol";
 import { createWindow } from "./window";
-import { getProgress, saveProgress } from "./progress";
+import { getProgress, loadProgresses, saveProgress } from "./progress";
 
 import type { Progress, Library, BookID } from "../shared/types";
 import type { Api } from "../shared/api";
@@ -13,6 +13,11 @@ import type { Api } from "../shared/api";
 function librarySavePath(): string
 {
     return join(app.getPath("userData"), "library.json");
+}
+
+function progressSavePath(): string
+{
+    return join(app.getPath("userData"), "progress.json");
 }
 
 // ==== IPC Handlers ==== ///
@@ -73,7 +78,7 @@ async function handleGetProgress(bookId: BookID): Promise<Progress | undefined>
 
 async function handleSaveProgress(progress: Progress): Promise<void>
 {
-    return saveProgress(progress, "");
+    return saveProgress(progress, progressSavePath());
 }
 
 type Handlers = { [C in keyof Api]: (...args: unknown[]) => ReturnType<Api[C]> };
@@ -107,6 +112,15 @@ app.whenReady().then(async () =>
     catch (err)
     {
         console.error(`Failed to load library: ${err}`);
+    }
+
+    try
+    {
+        await loadProgresses(progressSavePath());
+    }
+    catch (err)
+    {
+        console.error(`Failed to load progresses: ${err}`);
     }
 
     await createWindow();
