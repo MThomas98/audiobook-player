@@ -6,11 +6,13 @@ Built with Electron, React and TypeScript, partly as a project to learn those to
 
 ## Status
 
-Early development. You can add folders or individual files to the library, browse it as a grid of covers, and open a book on its own player page: play/pause, seeking, and skipping back and forward. Playback carries on while you browse the library, with small controls for the current book at the top.
+Early development. You can add folders or individual files to the library, browse it as a grid of covers, and open a book on its own player page. There you can play/pause, skip 10 seconds back or forward, and move to the previous or next chapter. A progress bar and the elapsed time show where you are in the current chapter. A chapter list shows how much of each chapter you've played and jumps to any of them. Playback carries on while you browse the library, with small controls for the current book at the top.
+
+The library is remembered between runs, and each book picks up where you left off. The window also remembers its size and position.
 
 Planned:
-- On the player page: a chapter list with chapter navigation, playback speed, and elapsed/total time
-- Remembering the library and resuming where you left off
+- Playback speed
+- Reopening the last book when the app starts
 - Media keys and the Windows media overlay, a sleep timer, keyboard shortcuts, a settings menu
 - A Windows installer
 
@@ -43,7 +45,7 @@ VS Code sets `ELECTRON_RUN_AS_NODE=1` in its terminals, which stops Electron fro
 
 ```
 src/
-  main/      Electron main process: library scanning, file dialogs, IPC handlers, audio streaming
+  main/      Electron main process: library scanning, file dialogs, IPC handlers, audio streaming, saved state
   preload/   Exposes a small, typed API to the page
   renderer/  React user interface
   shared/    Types and pure logic used by both sides
@@ -53,5 +55,7 @@ docs/        Project plan
 ```
 
 The user interface has no access to Node or the file system. It asks the main process for things through a typed API (`src/shared/api.ts`) and refers to books by ID, never by file path. Audio and cover art reach the page through a custom `morgiobooks://` URL scheme, which only serves books that are already in the library. Audio is streamed with support for HTTP range requests, so seeking jumps straight to the right part of the file.
+
+The app saves its state as JSON files in `%APPDATA%\Morgiobooks`: the folders and files you added (`library.json`), your position in each book (`progress.json`) and the window's size and position (`window.json`). Delete a file to reset that part. A file that can't be read is renamed to `<name>.corrupt` and the app starts without it.
 
 The milestones and design decisions are in [docs/plan.md](docs/plan.md).
